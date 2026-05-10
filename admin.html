@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Closebook Admin</title>
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section id="admin-login" class="login-card">
+        <div>
+          <p class="eyebrow">Developer area</p>
+          <h1>Closebook Admin</h1>
+          <p>Review reports and moderate accounts without entering the main social app.</p>
+        </div>
+        <form id="admin-login-form">
+          <input name="password" type="password" placeholder="Secret password" required />
+          <button type="submit">Login</button>
+          <p id="admin-login-message" class="form-message"></p>
+        </form>
+      </section>
+
+      <section id="admin-dashboard" class="dashboard hidden">
+        <header class="dashboard-head">
+          <div>
+            <p class="eyebrow">Moderation console</p>
+            <h1>Developer Admin Panel</h1>
+          </div>
+          <div class="header-actions">
+            <button id="admin-refresh" type="button">Refresh</button>
+            <button id="admin-logout" type="button">Logout</button>
+          </div>
+        </header>
+
+        <section id="admin-stats" class="stats-grid"></section>
+
+        <section class="admin-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Reports</h2>
+              <span id="report-count">0 open</span>
+            </div>
+            <div id="reports-list" class="stack-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Users</h2>
+              <span>ban, mute, restrict</span>
+            </div>
+            <input id="admin-user-search" class="search-input" type="search" placeholder="Search users..." />
+            <div id="admin-users-list" class="stack-list users-list"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>IP Bans</h2>
+            <span>network level blocks</span>
+          </div>
+          <div id="ip-ban-list" class="ip-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

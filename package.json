@@ -1,0 +1,12 @@
+{
+  "name": "closebook",
+  "version": "1.0.0",
+  "description": "A social media app with local Node backend, posts, chats, mentions, moderation, and karma.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}

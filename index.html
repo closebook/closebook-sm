@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Closebook</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="auth-screen" class="auth-screen">
+      <section class="auth-brand">
+        <div class="brand-mark">C</div>
+        <h1>Closebook</h1>
+        <p>
+          A compact social network where every post, chat, and karma vote shapes
+          your social reputation.
+        </p>
+        <div class="karma-scale">
+          <span>Villain</span>
+          <div class="scale-track"><div></div></div>
+          <span>God Level</span>
+        </div>
+      </section>
+
+      <section class="auth-panel" aria-label="Authentication">
+        <div class="auth-tabs" role="tablist">
+          <button id="show-login" class="active" type="button">Login</button>
+          <button id="show-register" type="button">Register</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <h2>Welcome back</h2>
+          <label>
+            Email
+            <input type="email" name="email" autocomplete="email" required />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <button class="primary-action" type="submit">Login</button>
+          <p class="form-note" id="login-message"></p>
+        </form>
+
+        <form id="register-form" class="auth-form hidden">
+          <h2>Create account</h2>
+          <div class="two-column">
+            <label>
+              Full name
+              <input type="text" name="fullName" autocomplete="name" required />
+            </label>
+            <label>
+              Username
+              <input type="text" name="username" autocomplete="username" required />
+            </label>
+          </div>
+          <div class="two-column">
+            <label>
+              Age
+              <input type="number" name="age" min="13" max="120" required />
+            </label>
+            <label>
+              Email
+              <input type="email" name="email" autocomplete="email" required />
+            </label>
+          </div>
+          <label>
+            Password
+            <input
+              type="password"
+              name="password"
+              minlength="6"
+              autocomplete="new-password"
+              required
+            />
+          </label>
+          <button class="primary-action" type="submit">Register</button>
+          <p class="form-note" id="register-message"></p>
+        </form>
+      </section>
+    </div>
+
+    <main id="app-shell" class="app-shell hidden">
+      <aside class="sidebar">
+        <div class="brand-row">
+          <div class="brand-mark small">C</div>
+          <span>Closebook</span>
+        </div>
+        <nav class="main-nav" aria-label="Primary">
+          <button class="nav-link active" data-view="feed" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.8 12 3l9 7.8V21h-6v-6H9v6H3z"/></svg>
+            <span>Home</span>
+          </button>
+          <button class="nav-link" data-view="people" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 5.3-2.2L21 21l-2 2-5.2-5.2A7.4 7.4 0 0 1 10.5 18Zm0-3a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z"/></svg>
+            <span>Explore</span>
+          </button>
+          <button class="nav-link" data-view="chats" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H8l-4 4zm4 5v2h8V9zm0 4v2h5v-2z"/></svg>
+            <span>Messages</span>
+          </button>
+          <button class="nav-link" data-view="notifications" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a2.5 2.5 0 0 0 2.4-2h-4.8A2.5 2.5 0 0 0 12 21Zm8-5-2-2v-4a6 6 0 1 0-12 0v4l-2 2v1h16z"/></svg>
+            <span>Activity</span>
+          </button>
+          <button class="nav-link" data-view="profile" type="button">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm9 10a9 9 0 0 0-18 0z"/></svg>
+            <span>Profile</span>
+          </button>
+        </nav>
+        <button id="logout-btn" class="ghost-action" type="button">Logout</button>
+      </aside>
+
+      <section class="content-area">
+        <header class="topbar">
+          <div class="topbar-brand">Closebook</div>
+          <div class="topbar-actions">
+            <div class="live-pill" id="live-status"><span></span> Offline</div>
+            <div class="karma-pill" id="current-karma">0 karma</div>
+          </div>
+        </header>
+
+        <section id="feed-view" class="view active">
+          <div class="feed-layout">
+            <section class="feed-main">
+              <div id="stories-list" class="stories-list" aria-label="People stories"></div>
+              <div class="feed-tabs" aria-label="Feed filters">
+                <button class="feed-tab active" data-feed-filter="all" type="button">All</button>
+                <button class="feed-tab" data-feed-filter="following" type="button">Following</button>
+                <button class="feed-tab" data-feed-filter="saved" type="button">Saved</button>
+              </div>
+              <form id="post-form" class="composer">
+                <div class="composer-head">
+                  <div class="avatar" id="composer-avatar">C</div>
+                  <textarea
+                    name="body"
+                    maxlength="280"
+                    placeholder="Write a caption..."
+                  ></textarea>
+                </div>
+                <div id="post-mention-suggestions" class="mention-suggestions hidden"></div>
+                <div id="image-preview" class="image-preview hidden"></div>
+                <div class="composer-footer">
+                  <label class="upload-action">
+                    <input id="image-input" type="file" accept="image/*" />
+                    Add photo
+                  </label>
+                  <span id="post-count">0/280</span>
+                  <button class="primary-action compact" type="submit">Share</button>
+                </div>
+                <p class="form-note" id="post-message"></p>
+              </form>
+              <div id="posts-list" class="post-list"></div>
+            </section>
+            <aside class="right-rail">
+              <div class="mini-profile">
+                <div class="avatar large" id="rail-avatar">C</div>
+                <div>
+                  <strong id="current-user-name">User</strong>
+                  <span id="rail-username">@user</span>
+                </div>
+              </div>
+              <div class="rail-card">
+                <div class="rail-title">
+                  <h3>Karma Board</h3>
+                  <div class="live-pill" id="rail-live-status"><span></span> Offline</div>
+                </div>
+                <div id="karma-board" class="karma-board"></div>
+              </div>
+              <div class="rail-card">
+                <div class="rail-title">
+                  <h3>Trending</h3>
+                  <span class="rail-kicker">From captions</span>
+                </div>
+                <div id="trend-list" class="trend-list"></div>
+              </div>
+              <div class="rail-card">
+                <div class="rail-title">
+                  <h3>Suggested</h3>
+                  <span class="rail-kicker">People to follow</span>
+                </div>
+                <div id="suggested-list" class="suggested-list"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="people-view" class="view">
+          <div class="section-head">
+            <h2>People</h2>
+            <p>Raise someone toward god level, or drag them toward villain level.</p>
+          </div>
+          <input id="people-search" class="search-input" type="search" placeholder="Search people by name or username..." />
+          <div id="people-list" class="people-list"></div>
+        </section>
+
+        <section id="notifications-view" class="view">
+          <div class="section-head">
+            <h2>Activity</h2>
+            <button id="mark-read-btn" class="chip-btn" type="button">Mark all read</button>
+          </div>
+          <div id="notifications-list" class="notifications-list"></div>
+        </section>
+
+        <section id="chats-view" class="view">
+          <div class="chat-layout">
+            <aside class="chat-panel">
+              <div class="chat-toolbar">
+                <div class="chat-search-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 18a7.5 7.5 0 1 1 5.3-2.2L21 21l-2 2-5.2-5.2A7.4 7.4 0 0 1 10.5 18Zm0-3a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z"/></svg>
+                  <input id="chat-search" type="search" placeholder="Search people or groups..." />
+                </div>
+                <button id="open-group-modal" class="icon-action" type="button" aria-label="Create group chat">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-3.5-5.9A5 5 0 1 0 9 14h7a4 4 0 0 0 0-8Zm-7 1a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm8 7v3h-2v-3h-3v-2h3v-3h2v3h3v2z"/></svg>
+                </button>
+              </div>
+              <p id="chat-message" class="form-note"></p>
+              <div id="chat-list" class="chat-list"></div>
+            </aside>
+            <section class="messages-panel">
+              <div id="active-chat-header" class="active-chat-header">
+                <button id="chat-back-btn" class="chat-back-btn" type="button">Back</button>
+                <span>Select or create a chat</span>
+              </div>
+              <div id="chat-settings" class="chat-settings"></div>
+              <div id="messages-list" class="messages-list"></div>
+              <form id="message-form" class="message-form">
+                <div id="reply-preview" class="reply-preview hidden"></div>
+                <input
+                  name="message"
+                  type="text"
+                  placeholder="Write a message..."
+                  autocomplete="off"
+                  required
+                />
+                <button class="primary-action compact" type="submit">Send</button>
+                <div id="chat-mention-suggestions" class="mention-suggestions hidden"></div>
+                <p id="message-status" class="form-note"></p>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section id="profile-view" class="view">
+          <div id="profile-card" class="profile-card"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="group-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="group-modal-title">
+      <form id="chat-form" class="group-modal">
+        <div class="modal-head">
+          <div>
+            <h2 id="group-modal-title">Create Group</h2>
+            <p>Select two or more people to start a group chat.</p>
+          </div>
+          <button id="close-group-modal" class="icon-action ghost-icon" type="button" aria-label="Close group chat creator">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 4 14 14-2 2L4 6zm12 0 2 2L6 20l-2-2z"/></svg>
+          </button>
+        </div>
+        <input name="name" type="text" placeholder="Group name" maxlength="40" />
+        <div id="chat-members" class="member-picker"></div>
+        <p id="group-message" class="form-note"></p>
+        <button class="primary-action" type="submit">Create Group Chat</button>
+      </form>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
