@@ -8,6 +8,8 @@ const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const DB_FILE = path.join(DATA_DIR, "database.json");
+const IRIS_BOT_ID = "user_iris_bot";
+const IRIS_BOT_USERNAME = "irisbot";
 
 const emptyDb = {
   users: [],
@@ -112,6 +114,7 @@ async function handleApi(req, res, url) {
       following: [],
       followers: [],
       savedPosts: [],
+      isModerator: false,
       moderation: defaultModeration(),
       registeredIp: clientIp,
       lastIp: clientIp,
@@ -423,6 +426,32 @@ async function handleApi(req, res, url) {
     return sendJson(res, 200, { ok: true });
   }
 
+  const moderatorKarmaAction = url.pathname.match(/^\/api\/users\/([^/]+)\/karma\/moderate$/);
+  if (req.method === "POST" && moderatorKarmaAction) {
+    const body = await readBody(req);
+    const target = db.users.find((user) => user.id === moderatorKarmaAction[1]);
+    const amount = Number(body.amount);
+
+    if (!currentUser.isModerator) return sendJson(res, 403, { error: "Only moderators can adjust karma." });
+    if (!target) return sendJson(res, 404, { error: "User not found." });
+    if (target.id === currentUser.id) return sendJson(res, 400, { error: "Moderators cannot adjust their own karma." });
+    if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 10) {
+      return sendJson(res, 400, { error: "Moderator karma adjustment must be between -10 and 10." });
+    }
+
+    target.karma += amount;
+    addNotification(db, {
+      userId: target.id,
+      actorId: currentUser.id,
+      type: "karma",
+      text: `${currentUser.username} ${amount > 0 ? "increased" : "decreased"} your karma by ${Math.abs(amount)} as a moderator.`,
+    });
+    writeDb(db);
+    broadcast("social", { actorId: currentUser.id, targetId: target.id });
+
+    return sendJson(res, 200, { ok: true });
+  }
+
   if (req.method === "GET" && url.pathname === "/api/chats") {
     const chats = db.chats
       .filter((chat) => chat.members.includes(currentUser.id))
@@ -554,9 +583,17 @@ async function handleApi(req, res, url) {
     if (chat.direct) return sendJson(res, 400, { error: "Direct chats cannot add members." });
     if (!isChatAdmin(chat, currentUser.id)) return sendJson(res, 403, { error: "Only admins can add members." });
     if (!user) return sendJson(res, 404, { error: "User not found." });
+    if ((chat.moderation?.bannedUserIds || []).includes(userId)) {
+      return sendJson(res, 403, { error: "This user is banned from the group." });
+    }
     if (!chat.members.includes(userId)) chat.members.push(userId);
 
     addSystemMessage(chat, `${currentUser.username} added ${user.username}.`);
+    if (userId === IRIS_BOT_ID) {
+      addBotMessage(chat, "Iris Bot joined. Make me an admin to enable moderation commands. Type /help after promotion.");
+    } else if (chat.moderation?.rules) {
+      addBotMessage(chat, `Welcome @${user.username}. Group rules:\n${chat.moderation.rules}`);
+    }
     writeDb(db);
     broadcast("chat", { actorId: currentUser.id, chatId: chat.id, members: chat.members });
 
@@ -634,7 +671,15 @@ async function handleApi(req, res, url) {
       return sendJson(res, 404, { error: "Chat not found." });
     }
     if (isChatRestricted(currentUser)) return sendJson(res, 403, { error: moderationError(currentUser, "You cannot send messages at the moment.") });
+    if (isGroupMuted(chat, currentUser.id)) return sendJson(res, 403, { error: "You are muted in this group right now." });
     if (!text) return sendJson(res, 400, { error: "Message cannot be empty." });
+
+    if (!chat.direct && text.startsWith("/")) {
+      const commandHandled = handleIrisCommand(db, chat, currentUser, text);
+      writeDb(db);
+      broadcast("chat", { actorId: currentUser.id, chatId: chat.id, members: chat.members });
+      return sendJson(res, 200, { ok: true, commandHandled });
+    }
 
     const message = {
       id: uid("message"),
@@ -669,7 +714,7 @@ async function handleApi(req, res, url) {
     const body = await readBody(req);
     const chat = db.chats.find((item) => item.id === reactionAction[1]);
     const reaction = clean(body.reaction);
-    const allowedReactions = ["Like", "Wow", "Boost", "Agree"];
+    const allowedReactions = ["👍", "❤️", "😂", "🔥", "Like", "Wow", "Boost", "Agree"];
 
     if (!chat || !chat.members.includes(currentUser.id)) {
       return sendJson(res, 404, { error: "Chat not found." });
@@ -812,6 +857,7 @@ async function handleAdminApi(req, res, url, db, adminSession, clientIp) {
       reason: clean(body.reason).slice(0, 180),
       updatedAt: Date.now(),
     };
+    user.isModerator = Boolean(body.isModerator);
     user.moderation.strikes = Array.isArray(previousModeration.strikes) ? previousModeration.strikes : [];
 
     const strikeText = moderationNotificationText(user.moderation, previousModeration);
@@ -842,8 +888,32 @@ async function handleAdminApi(req, res, url, db, adminSession, clientIp) {
     }
 
     writeDb(db);
-    broadcast("social", { actorId: user.id, members: [user.id] });
-    broadcast("chat", { actorId: user.id, members: [user.id] });
+    broadcast("social", { actorId: user.id });
+    broadcast("chat", { actorId: user.id });
+
+    return sendJson(res, 200, { user: adminUser(user) });
+  }
+
+  const adminKarmaAction = url.pathname.match(/^\/api\/admin\/users\/([^/]+)\/karma$/);
+  if (req.method === "PATCH" && adminKarmaAction) {
+    const body = await readBody(req);
+    const user = db.users.find((item) => item.id === adminKarmaAction[1]);
+    const amount = Number(body.amount);
+
+    if (!user) return sendJson(res, 404, { error: "User not found." });
+    if (!Number.isInteger(amount) || amount === 0) {
+      return sendJson(res, 400, { error: "Enter a whole karma amount other than 0." });
+    }
+
+    user.karma += amount;
+    addNotification(db, {
+      userId: user.id,
+      actorId: "admin",
+      type: "karma",
+      text: `Closebook Admin ${amount > 0 ? "increased" : "decreased"} your karma by ${Math.abs(amount)}.`,
+    });
+    writeDb(db);
+    broadcast("social", { actorId: user.id });
 
     return sendJson(res, 200, { user: adminUser(user) });
   }
@@ -957,6 +1027,43 @@ function writeDb(db) {
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 }
 
+function ensureIrisBot(db) {
+  let bot = db.users.find((user) => user.id === IRIS_BOT_ID || user.username === IRIS_BOT_USERNAME);
+  if (!bot) {
+    bot = {
+      id: IRIS_BOT_ID,
+      fullName: "Iris Bot",
+      username: IRIS_BOT_USERNAME,
+      age: 1,
+      email: "irisbot@closebook.local",
+      passwordHash: "",
+      bio: "Default Closebook group moderation bot.",
+      website: "",
+      karma: 100,
+      votedUsers: {},
+      following: [],
+      followers: [],
+      savedPosts: [],
+      isModerator: false,
+      moderation: defaultModeration(),
+      registeredIp: "system",
+      lastIp: "system",
+      isBot: true,
+      createdAt: Date.now(),
+    };
+    db.users.push(bot);
+    return;
+  }
+
+  bot.id = IRIS_BOT_ID;
+  bot.fullName = "Iris Bot";
+  bot.username = IRIS_BOT_USERNAME;
+  bot.email = bot.email || "irisbot@closebook.local";
+  bot.bio = bot.bio || "Default Closebook group moderation bot.";
+  bot.isBot = true;
+  bot.isModerator = false;
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = "";
@@ -1017,6 +1124,8 @@ function publicUser(user) {
     following: user.following || [],
     followers: user.followers || [],
     savedPosts: user.savedPosts || [],
+    isBot: Boolean(user.isBot),
+    isModerator: Boolean(user.isModerator),
     createdAt: user.createdAt,
   };
 }
@@ -1107,6 +1216,169 @@ function addSystemMessage(chat, body) {
   });
 }
 
+function addBotMessage(chat, body) {
+  chat.messages.push({
+    id: uid("message"),
+    authorId: IRIS_BOT_ID,
+    body,
+    replyTo: "",
+    reactions: {},
+    system: false,
+    createdAt: Date.now(),
+  });
+}
+
+function defaultChatModeration() {
+  return {
+    rules: "",
+    bannedUserIds: [],
+    mutedUntil: {},
+    warnings: {},
+  };
+}
+
+function isIrisActive(chat) {
+  return chat.members.includes(IRIS_BOT_ID) && isChatAdmin(chat, IRIS_BOT_ID);
+}
+
+function isGroupMuted(chat, userId) {
+  const mutedUntil = Number(chat.moderation?.mutedUntil?.[userId] || 0);
+  if (!mutedUntil) return false;
+  if (mutedUntil > Date.now()) return true;
+  delete chat.moderation.mutedUntil[userId];
+  return false;
+}
+
+function handleIrisCommand(db, chat, actor, text) {
+  if (!isIrisActive(chat)) {
+    addBotMessage(chat, "Iris Bot is not active yet. Add Iris Bot to this group and make it admin first.");
+    return true;
+  }
+
+  const [commandRaw, ...restParts] = text.split(/\s+/);
+  const command = commandRaw.toLowerCase();
+  const rest = text.slice(commandRaw.length).trim();
+  const actorIsAdmin = isChatAdmin(chat, actor.id);
+  const target = findMentionedUser(db, rest);
+
+  if (command === "/help") {
+    addBotMessage(
+      chat,
+      "Iris commands: /set rules <rules>, /rules, /ban @user, /unban @user, /kick @user, /mute @user <minutes>, /warn @user, /warnings @user, /help.",
+    );
+    return true;
+  }
+
+  if (command === "/rules") {
+    addBotMessage(chat, chat.moderation.rules ? `Group rules:\n${chat.moderation.rules}` : "No group rules have been set yet.");
+    return true;
+  }
+
+  if (!actorIsAdmin) {
+    addBotMessage(chat, "Only group admins can use moderation commands.");
+    return true;
+  }
+
+  if (command === "/set") {
+    const rules = text.replace(/^\/set\s+rules\s*/i, "").trim();
+    if (!/^\/set\s+rules\b/i.test(text) || !rules) {
+      addBotMessage(chat, "Use: /set rules <rules>. Rules can be multiple lines.");
+      return true;
+    }
+    chat.moderation.rules = rules;
+    addBotMessage(chat, `Group rules updated:\n${rules}`);
+    return true;
+  }
+
+  if (!["/ban", "/unban", "/kick", "/mute", "/warn", "/warnings"].includes(command)) {
+    addBotMessage(chat, "Unknown command. Type /help to see Iris commands.");
+    return true;
+  }
+
+  if (!target) {
+    addBotMessage(chat, "Mention a valid user with @username.");
+    return true;
+  }
+
+  if (target.id === IRIS_BOT_ID) {
+    addBotMessage(chat, "I cannot moderate myself.");
+    return true;
+  }
+
+  if (target.id === chat.creatorId && command !== "/warnings") {
+    addBotMessage(chat, "I cannot moderate the group creator.");
+    return true;
+  }
+
+  if (isChatAdmin(chat, target.id) && !["/warnings", "/unban"].includes(command)) {
+    addBotMessage(chat, "I cannot moderate another admin. Remove their admin role first.");
+    return true;
+  }
+
+  if (!chat.members.includes(target.id) && !["/ban", "/unban", "/warnings"].includes(command)) {
+    addBotMessage(chat, `@${target.username} is not currently in this group.`);
+    return true;
+  }
+
+  if (command === "/warnings") {
+    addBotMessage(chat, `@${target.username} has ${chat.moderation.warnings[target.id] || 0}/3 warnings.`);
+    return true;
+  }
+
+  if (command === "/unban") {
+    chat.moderation.bannedUserIds = chat.moderation.bannedUserIds.filter((id) => id !== target.id);
+    chat.moderation.warnings[target.id] = 0;
+    addBotMessage(chat, `@${target.username} has been unbanned.`);
+    return true;
+  }
+
+  if (command === "/ban") {
+    if (!chat.moderation.bannedUserIds.includes(target.id)) chat.moderation.bannedUserIds.push(target.id);
+    removeChatMember(chat, target.id);
+    addBotMessage(chat, `@${target.username} has been banned and removed from the group.`);
+    return true;
+  }
+
+  if (command === "/kick") {
+    removeChatMember(chat, target.id);
+    addBotMessage(chat, `@${target.username} has been kicked from the group.`);
+    return true;
+  }
+
+  if (command === "/mute") {
+    const minutes = Math.max(1, Math.min(1440, Number(restParts.at(-1)) || 10));
+    chat.moderation.mutedUntil[target.id] = Date.now() + minutes * 60_000;
+    addBotMessage(chat, `@${target.username} has been muted for ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+    return true;
+  }
+
+  if (command === "/warn") {
+    const warnings = (chat.moderation.warnings[target.id] || 0) + 1;
+    chat.moderation.warnings[target.id] = warnings;
+    if (warnings >= 3) {
+      removeChatMember(chat, target.id);
+      chat.moderation.warnings[target.id] = 0;
+      addBotMessage(chat, `@${target.username} reached 3 warnings and was kicked from the group.`);
+    } else {
+      addBotMessage(chat, `@${target.username} has been warned (${warnings}/3).`);
+    }
+    return true;
+  }
+
+  return true;
+}
+
+function removeChatMember(chat, userId) {
+  chat.members = chat.members.filter((id) => id !== userId);
+  chat.admins = chat.admins.filter((id) => id !== userId);
+}
+
+function findMentionedUser(db, text) {
+  const match = String(text || "").match(/@([a-zA-Z0-9_]{2,30})/);
+  if (!match) return null;
+  return db.users.find((user) => user.username.toLowerCase() === match[1].toLowerCase()) || null;
+}
+
 function normalizeDb(db) {
   db.users = Array.isArray(db.users) ? db.users : [];
   db.posts = Array.isArray(db.posts) ? db.posts : [];
@@ -1116,6 +1388,7 @@ function normalizeDb(db) {
   db.adminSessions = Array.isArray(db.adminSessions) ? db.adminSessions : [];
   db.reports = Array.isArray(db.reports) ? db.reports : [];
   db.ipBans = Array.isArray(db.ipBans) ? db.ipBans : [];
+  ensureIrisBot(db);
 
   db.users.forEach((user) => {
     user.karma = Number(user.karma || 0);
@@ -1125,6 +1398,8 @@ function normalizeDb(db) {
     user.following = Array.isArray(user.following) ? user.following : [];
     user.followers = Array.isArray(user.followers) ? user.followers : [];
     user.savedPosts = Array.isArray(user.savedPosts) ? user.savedPosts : [];
+    user.isBot = Boolean(user.isBot);
+    user.isModerator = Boolean(user.isModerator);
     user.moderation = { ...defaultModeration(), ...(user.moderation || {}) };
     user.moderation.strikes = Array.isArray(user.moderation.strikes) ? user.moderation.strikes : [];
     user.registeredIp = user.registeredIp || "";
@@ -1143,6 +1418,10 @@ function normalizeDb(db) {
     chat.creatorId = chat.creatorId || chat.members?.[0] || "";
     chat.admins = Array.isArray(chat.admins) ? chat.admins : chat.direct ? [] : [chat.creatorId].filter(Boolean);
     chat.members = Array.isArray(chat.members) ? chat.members : [];
+    chat.moderation = { ...defaultChatModeration(), ...(chat.moderation || {}) };
+    chat.moderation.bannedUserIds = Array.isArray(chat.moderation.bannedUserIds) ? chat.moderation.bannedUserIds : [];
+    chat.moderation.mutedUntil = chat.moderation.mutedUntil && typeof chat.moderation.mutedUntil === "object" ? chat.moderation.mutedUntil : {};
+    chat.moderation.warnings = chat.moderation.warnings && typeof chat.moderation.warnings === "object" ? chat.moderation.warnings : {};
     chat.messages = Array.isArray(chat.messages) ? chat.messages : [];
     chat.messages.forEach((message) => {
       message.replyTo = message.replyTo || "";

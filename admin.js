@@ -88,6 +88,19 @@ userSearch.addEventListener("input", () => {
 });
 
 usersList.addEventListener("submit", async (event) => {
+  const karmaForm = event.target.closest("[data-admin-karma-form]");
+  if (karmaForm) {
+    event.preventDefault();
+    const data = new FormData(karmaForm);
+    const amount = Number(data.get("amount"));
+    await adminApi(`/api/admin/users/${karmaForm.dataset.userId}/karma`, {
+      method: "PATCH",
+      body: JSON.stringify({ amount }),
+    });
+    await loadAdmin();
+    return;
+  }
+
   const form = event.target.closest("[data-user-moderation-form]");
   if (!form) return;
   event.preventDefault();
@@ -101,6 +114,7 @@ usersList.addEventListener("submit", async (event) => {
       chatRestricted: data.has("chatRestricted"),
       appRestricted: data.has("appRestricted"),
       ipBanned: data.has("ipBanned"),
+      isModerator: data.has("isModerator"),
       reason: data.get("reason"),
     }),
   });
@@ -221,7 +235,7 @@ function renderUsers() {
               <div class="item-head">
                 <div>
                   <strong>${escapeHtml(user.fullName)}</strong>
-                  <span>@${escapeHtml(user.username)} - ${escapeHtml(user.email)}</span>
+                  <span>@${escapeHtml(user.username)}${modBadge(user)} - ${escapeHtml(user.email)}</span>
                 </div>
                 <b>${user.karma} karma</b>
               </div>
@@ -230,12 +244,20 @@ function renderUsers() {
                 <span>Registered: ${formatTime(user.createdAt)}</span>
                 <span>${user.followers.length} followers</span>
               </div>
+              <form class="admin-karma-form" data-admin-karma-form data-user-id="${user.id}">
+                <label>
+                  Karma adjustment
+                  <input name="amount" type="number" step="1" placeholder="+50 or -25" required />
+                </label>
+                <button type="submit">Apply karma</button>
+              </form>
               <form class="moderation-form" data-user-moderation-form data-user-id="${user.id}">
                 <label><input name="banned" type="checkbox" ${moderation.banned ? "checked" : ""} /> Ban account</label>
                 <label><input name="appRestricted" type="checkbox" ${moderation.appRestricted ? "checked" : ""} /> Restrict app</label>
                 <label><input name="muted" type="checkbox" ${moderation.muted ? "checked" : ""} /> Mute posting</label>
                 <label><input name="chatRestricted" type="checkbox" ${moderation.chatRestricted ? "checked" : ""} /> Restrict chat</label>
                 <label><input name="ipBanned" type="checkbox" ${ipBanned ? "checked" : ""} /> IP ban</label>
+                <label><input name="isModerator" type="checkbox" ${user.isModerator ? "checked" : ""} /> Moderator</label>
                 <input name="reason" type="text" maxlength="180" value="${escapeAttribute(moderation.reason || "")}" placeholder="Reason visible to admins" />
                 <button type="submit">Save moderation</button>
               </form>
@@ -262,6 +284,10 @@ function renderIpBans() {
         )
         .join("")
     : `<p class="muted">No IP bans active.</p>`;
+}
+
+function modBadge(user) {
+  return user?.isModerator ? `<span class="mod-badge" title="Closebook Moderator">MOD</span>` : "";
 }
 
 function formatTime(value) {

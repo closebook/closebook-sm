@@ -2909,3 +2909,550 @@ textarea:focus {
     max-width: 92%;
   }
 }
+
+/* Final UI optimization and emoji reactions */
+:root {
+  --brand: #695cff;
+  --brand-strong: #4f46e5;
+  --rose: #ec4899;
+  --sun: #f59e0b;
+  --cyan: #06b6d4;
+  --mint: #14b8a6;
+}
+
+body {
+  background:
+    linear-gradient(130deg, rgba(245, 158, 11, 0.2), transparent 26%),
+    linear-gradient(250deg, rgba(20, 184, 166, 0.2), transparent 32%),
+    linear-gradient(30deg, rgba(236, 72, 153, 0.18), transparent 42%),
+    linear-gradient(135deg, #090f22 0%, #121a35 48%, #31185f 100%);
+}
+
+.auth-panel,
+.composer,
+.post-card,
+.person-card,
+.chat-panel,
+.messages-panel,
+.profile-card,
+.stories-list,
+.rail-card,
+.notification-card,
+.mini-profile,
+.topbar {
+  border-color: rgba(255, 255, 255, 0.58);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.76)),
+    rgba(255, 255, 255, 0.86);
+}
+
+.post-card,
+.person-card,
+.rail-card,
+.notification-card,
+.composer {
+  box-shadow: 0 18px 54px rgba(15, 23, 42, 0.14);
+}
+
+.post-card:hover,
+.person-card:hover,
+.rail-card:hover,
+.notification-card:hover {
+  box-shadow: 0 28px 86px rgba(15, 23, 42, 0.22);
+}
+
+.brand-mark,
+.primary-action,
+.nav-link.active,
+.feed-tab.active,
+.profile-tabs button.active,
+.icon-action {
+  background: linear-gradient(135deg, #695cff, #d946ef 52%, #fb7185);
+}
+
+.topbar-brand,
+.brand-row span {
+  background: linear-gradient(135deg, #4f46e5, #be185d, #0f766e);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.story-ring {
+  background: conic-gradient(from 140deg, #fb7185, #f59e0b, #14b8a6, #06b6d4, #695cff, #d946ef, #fb7185);
+}
+
+.post-card::before,
+.person-card::before,
+.rail-card::before,
+.notification-card::before {
+  background: linear-gradient(90deg, #fb7185, #f59e0b, #14b8a6, #06b6d4, #695cff, #d946ef);
+}
+
+.delete-post-btn {
+  border-color: rgba(225, 29, 72, 0.24);
+  color: #be123c;
+  background: linear-gradient(135deg, rgba(255, 241, 242, 0.9), rgba(255, 228, 230, 0.72));
+}
+
+.delete-post-btn:hover {
+  color: white;
+  background: linear-gradient(135deg, #e11d48, #fb7185);
+  box-shadow: 0 14px 34px rgba(225, 29, 72, 0.24);
+}
+
+.reaction-picker button {
+  min-width: 34px;
+  min-height: 32px;
+  padding: 5px 9px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1rem;
+  line-height: 1;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+}
+
+.reaction-picker button:hover {
+  transform: translateY(-2px) scale(1.04);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.reaction-picker button.active {
+  color: white;
+  background: linear-gradient(135deg, #695cff, #ec4899);
+  box-shadow: 0 10px 24px rgba(105, 92, 255, 0.28);
+}
+
+.reaction-summary span {
+  font-size: 0.82rem;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+}
+
+.message.mine .reaction-picker button,
+.message.mine .reaction-summary span {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.message.mine .reaction-picker button.active {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.chat-item,
+.trend-row,
+.suggested-row,
+.karma-row,
+.member-row {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.profile-cover {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.1), rgba(15, 23, 42, 0.02)),
+    linear-gradient(120deg, #14b8a6, #06b6d4 32%, #695cff 66%, #ec4899);
+}
+
+/* Closebook editorial theme refresh */
+:root {
+  --bg: #10131f;
+  --text: #182033;
+  --muted: #667085;
+  --line: rgba(148, 163, 184, 0.22);
+  --panel: rgba(255, 255, 255, 0.9);
+  --glass: rgba(255, 255, 255, 0.82);
+  --brand: #2563eb;
+  --brand-strong: #1d4ed8;
+  --rose: #e11d48;
+  --sun: #f97316;
+  --cyan: #0891b2;
+  --mint: #059669;
+  --shadow: 0 28px 80px rgba(16, 24, 40, 0.2);
+  --small-shadow: 0 14px 40px rgba(16, 24, 40, 0.12);
+}
+
+html {
+  background: #10131f;
+}
+
+body {
+  background:
+    linear-gradient(115deg, rgba(37, 99, 235, 0.18), transparent 32%),
+    linear-gradient(245deg, rgba(249, 115, 22, 0.16), transparent 34%),
+    linear-gradient(0deg, rgba(5, 150, 105, 0.12), transparent 38%),
+    linear-gradient(135deg, #10131f 0%, #1a2236 45%, #f6efe8 100%);
+  color: var(--text);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent 72%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: auto 0 0;
+  z-index: -1;
+  height: 42vh;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.5), transparent);
+}
+
+.auth-screen::before,
+.content-area::before {
+  display: none;
+}
+
+.auth-brand h1 {
+  color: #ffffff;
+  text-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+}
+
+.auth-brand p,
+.karma-scale {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.scale-track {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.scale-track div {
+  background: linear-gradient(90deg, #e11d48, #f97316, #22c55e);
+}
+
+.auth-panel,
+.composer,
+.post-card,
+.person-card,
+.chat-panel,
+.messages-panel,
+.profile-card,
+.stories-list,
+.rail-card,
+.notification-card,
+.mini-profile,
+.topbar {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 245, 0.78)),
+    rgba(255, 255, 255, 0.86);
+  box-shadow: var(--small-shadow);
+  backdrop-filter: blur(20px) saturate(1.08);
+}
+
+.auth-panel,
+.post-card,
+.person-card,
+.chat-panel,
+.messages-panel,
+.profile-card,
+.stories-list,
+.rail-card,
+.notification-card,
+.composer {
+  border-radius: 18px;
+}
+
+.sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.36);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 247, 237, 0.78)),
+    rgba(255, 255, 255, 0.84);
+  box-shadow: 18px 0 70px rgba(16, 24, 40, 0.14);
+}
+
+.brand-mark,
+.primary-action,
+.nav-link.active,
+.feed-tab.active,
+.profile-tabs button.active,
+.icon-action {
+  background: linear-gradient(135deg, #2563eb, #0891b2 48%, #f97316);
+}
+
+.brand-row span,
+.topbar-brand {
+  color: transparent;
+  background: linear-gradient(135deg, #1d4ed8, #0f766e, #c2410c);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.nav-link {
+  color: #475467;
+}
+
+.nav-link:hover {
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.nav-link.active {
+  color: white;
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.24);
+}
+
+.topbar {
+  border-radius: 16px;
+}
+
+.story-ring {
+  background: conic-gradient(from 120deg, #2563eb, #0891b2, #22c55e, #f97316, #e11d48, #2563eb);
+}
+
+.avatar,
+.chat-avatar {
+  background: linear-gradient(135deg, #2563eb, #0891b2 54%, #f97316);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.18);
+}
+
+.post-card::before,
+.person-card::before,
+.rail-card::before,
+.notification-card::before {
+  height: 4px;
+  background: linear-gradient(90deg, #2563eb, #0891b2, #22c55e, #f97316);
+}
+
+.post-card:hover,
+.person-card:hover,
+.rail-card:hover,
+.notification-card:hover {
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: var(--shadow);
+}
+
+.feed-tabs,
+.profile-tabs {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.feed-tab.active,
+.chip-btn.active {
+  color: white;
+  background: linear-gradient(135deg, #2563eb, #0891b2);
+  box-shadow: 0 12px 28px rgba(8, 145, 178, 0.22);
+}
+
+.chip-btn,
+.upload-action,
+.reply-button,
+.reaction-picker button,
+.reaction-summary span {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.post-tags span,
+.trend-row span,
+.mention {
+  color: #075985;
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.12), rgba(37, 99, 235, 0.1));
+}
+
+.chat-panel,
+.messages-panel {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(239, 246, 255, 0.76)),
+    rgba(255, 255, 255, 0.84);
+}
+
+.chat-item.active {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(8, 145, 178, 0.1));
+}
+
+.messages-list {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.58)),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(8, 145, 178, 0.08), rgba(249, 115, 22, 0.06));
+}
+
+.message.mine {
+  background: linear-gradient(135deg, #2563eb, #0891b2 62%, #0f766e);
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.22);
+}
+
+.reaction-picker button.active {
+  background: linear-gradient(135deg, #2563eb, #0891b2);
+}
+
+.profile-cover {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.02)),
+    linear-gradient(120deg, #2563eb, #0891b2 34%, #22c55e 66%, #f97316);
+}
+
+.bot-status,
+.rules-card,
+.command-card {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.bot-status {
+  border-color: rgba(37, 99, 235, 0.24);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(8, 145, 178, 0.08));
+}
+
+.bot-status.active {
+  border-color: rgba(5, 150, 105, 0.28);
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.12), rgba(8, 145, 178, 0.08));
+}
+
+.bot-status strong,
+.rules-card strong,
+.command-card strong {
+  color: #172033;
+}
+
+.bot-status span,
+.rules-card p {
+  margin: 0;
+  color: #64748b;
+  white-space: pre-wrap;
+}
+
+.command-card {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.command-card strong {
+  grid-column: 1 / -1;
+}
+
+.command-card span {
+  border-radius: 999px;
+  padding: 6px 8px;
+  color: #075985;
+  background: rgba(8, 145, 178, 0.1);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.add-members-box {
+  margin-top: 12px;
+}
+
+.add-members-box summary {
+  width: fit-content;
+  list-style: none;
+  border-radius: 999px;
+  padding: 9px 13px;
+  color: white;
+  background: linear-gradient(135deg, #2563eb, #0891b2);
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.2);
+}
+
+.add-members-box summary::-webkit-details-marker {
+  display: none;
+}
+
+.add-members-box[open] summary {
+  margin-bottom: 10px;
+}
+
+.add-members-box .profile-muted {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+}
+
+.mod-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border: 1px solid rgba(122, 74, 8, 0.5);
+  border-radius: 999px;
+  color: #3d2500;
+  background:
+    linear-gradient(135deg, #fff9cf 0%, #f8d45f 28%, #b67714 52%, #fff1a4 72%, #9b6410 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 7px 18px rgba(181, 116, 17, 0.24);
+  font-size: 0.64rem;
+  font-weight: 1000;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.56);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.mod-karma-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(181, 116, 17, 0.28);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 248, 207, 0.78), rgba(255, 241, 164, 0.42)),
+    rgba(255, 255, 255, 0.7);
+}
+
+.mod-karma-tools span {
+  margin-right: auto;
+  color: #7c4a03;
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.message.mine .mod-badge,
+.primary-user .mod-badge {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 4px 12px rgba(56, 36, 0, 0.24);
+}
+
+.notification-card.unread {
+  border-color: rgba(37, 99, 235, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.82)),
+    rgba(255, 255, 255, 0.86);
+}
+
+.notification-card.admin-strike {
+  border-color: rgba(225, 29, 72, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 241, 242, 0.82)),
+    rgba(255, 255, 255, 0.86);
+}
+
+@media (max-width: 860px) {
+  body {
+    background:
+      linear-gradient(160deg, rgba(37, 99, 235, 0.18), transparent 32%),
+      linear-gradient(20deg, rgba(249, 115, 22, 0.16), transparent 45%),
+      linear-gradient(135deg, #10131f 0%, #1a2236 58%, #f6efe8 100%);
+  }
+
+  .sidebar {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 247, 237, 0.82)),
+      rgba(255, 255, 255, 0.88);
+  }
+}

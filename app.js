@@ -75,7 +75,7 @@ let feedFilter = "all";
 let replyToMessageId = "";
 let profileTab = "posts";
 let chatQuery = "";
-const MESSAGE_REACTIONS = ["Like", "Wow", "Boost", "Agree"];
+const MESSAGE_REACTIONS = ["👍", "❤️", "😂", "🔥"];
 
 function token() {
   return localStorage.getItem(TOKEN_KEY);
@@ -406,6 +406,7 @@ postsList.addEventListener("click", async (event) => {
     });
     input.value = "";
   } else if (button.dataset.action === "delete") {
+    if (!window.confirm("Delete this post permanently?")) return;
     await api(`/api/posts/${button.dataset.postId}`, {
       method: "DELETE",
     });
@@ -419,6 +420,12 @@ postsList.addEventListener("click", async (event) => {
 });
 
 peopleList.addEventListener("click", async (event) => {
+  const modKarmaButton = event.target.closest("button[data-mod-karma]");
+  if (modKarmaButton) {
+    await adjustModeratorKarma(modKarmaButton.dataset.userId, Number(modKarmaButton.dataset.modKarma));
+    return;
+  }
+
   const reportButton = event.target.closest("button[data-report-user]");
   if (reportButton) {
     await submitReport("user", reportButton.dataset.reportUser, "Report this user");
@@ -448,6 +455,12 @@ profileCard.addEventListener("click", async (event) => {
   if (tabButton) {
     profileTab = tabButton.dataset.profileTab;
     renderProfile();
+    return;
+  }
+
+  const modKarmaButton = event.target.closest("button[data-mod-karma]");
+  if (modKarmaButton) {
+    await adjustModeratorKarma(modKarmaButton.dataset.userId, Number(modKarmaButton.dataset.modKarma));
     return;
   }
 
@@ -826,9 +839,9 @@ function renderHeader() {
   const unreadNotifications = state.notifications.filter((item) => !item.read).length;
   const unreadMessages = state.chats.reduce((total, chat) => total + unreadChatCount(chat), 0);
 
-  currentUserName.textContent = state.currentUser.fullName;
+  currentUserName.innerHTML = `${escapeHtml(state.currentUser.fullName)}${modBadge(state.currentUser)}`;
   currentUserName.dataset.profileId = state.currentUser.id;
-  railUsername.textContent = `@${state.currentUser.username}`;
+  railUsername.innerHTML = `@${escapeHtml(state.currentUser.username)}${modBadge(state.currentUser)}`;
   railUsername.dataset.profileId = state.currentUser.id;
   composerAvatar.textContent = initials(state.currentUser.fullName);
   composerAvatar.dataset.profileId = state.currentUser.id;
@@ -856,7 +869,7 @@ function renderStories() {
       (user) => `
         <button class="story-item profile-link" data-profile-id="${user.id}" type="button">
           <div class="story-ring"><div class="avatar">${initials(user.fullName)}</div></div>
-          <span>${escapeHtml(user.username)}</span>
+          <span>${escapeHtml(user.username)}${modBadge(user)}</span>
         </button>
       `,
     )
@@ -889,7 +902,7 @@ function renderPosts() {
               <div class="avatar">${initials(author.fullName)}</div>
               <div>
                 <strong>${escapeHtml(author.fullName)}</strong>
-                <span>@${escapeHtml(author.username)} - ${karmaRank(author.karma)}</span>
+                <span>@${escapeHtml(author.username)}${modBadge(author)} - ${karmaRank(author.karma)}</span>
               </div>
             </button>
             <div class="post-meta">${formatTime(post.createdAt)}</div>
@@ -929,7 +942,7 @@ function renderPosts() {
             }
             ${
               mine
-                ? `<button class="chip-btn danger" data-action="delete" data-post-id="${post.id}" type="button">Delete</button>`
+                ? `<button class="chip-btn danger delete-post-btn" data-action="delete" data-post-id="${post.id}" type="button">Delete</button>`
                 : ""
             }
           </div>
@@ -938,7 +951,7 @@ function renderPosts() {
               .map((comment) => {
                 const commenter = userById(comment.authorId);
                 return `
-                  <p><button class="inline-profile-link" data-profile-id="${commenter?.id || ""}" type="button">${escapeHtml(commenter?.username || "user")}</button> ${renderTextWithMentions(comment.body)}</p>
+                  <p><button class="inline-profile-link" data-profile-id="${commenter?.id || ""}" type="button">${escapeHtml(commenter?.username || "user")}${modBadge(commenter)}</button> ${renderTextWithMentions(comment.body)}</p>
                 `;
               })
               .join("")}
@@ -967,7 +980,7 @@ function renderKarmaBoard() {
               <button class="identity profile-link" data-profile-id="${user.id}" type="button">
                 <div class="avatar">${initials(user.fullName)}</div>
                 <div>
-                  <strong>${escapeHtml(user.username)}</strong>
+                  <strong>${escapeHtml(user.username)}${modBadge(user)}</strong>
                   <span>${karmaRank(user.karma)}</span>
                 </div>
               </button>
@@ -1022,7 +1035,7 @@ function renderRightRail() {
             <div class="suggested-row">
               <button class="identity profile-link" data-profile-id="${user.id}" type="button">
                 <div class="avatar">${initials(user.fullName)}</div>
-                <span><strong>${escapeHtml(user.fullName)}</strong><small>@${escapeHtml(user.username)}</small></span>
+                <span><strong>${escapeHtml(user.fullName)}</strong><small>@${escapeHtml(user.username)}${modBadge(user)}</small></span>
               </button>
               <button class="text-action" data-message-user="${user.id}" type="button">Message</button>
             </div>
@@ -1067,7 +1080,7 @@ function renderPeople() {
               <div class="avatar">${initials(user.fullName)}</div>
               <div>
                 <strong>${escapeHtml(user.fullName)}</strong>
-                <span>@${escapeHtml(user.username)} - age ${user.age}</span>
+                <span>@${escapeHtml(user.username)}${modBadge(user)} - age ${user.age}</span>
               </div>
             </button>
             <div class="karma-title">${user.karma} - ${karmaRank(user.karma)}</div>
@@ -1085,6 +1098,7 @@ function renderPeople() {
             </button>
             <button class="chip-btn" data-report-user="${user.id}" type="button">Report</button>
           </div>
+          ${state.currentUser.isModerator ? moderatorKarmaControls(user.id) : ""}
         </article>
       `;
     })
@@ -1102,7 +1116,7 @@ function renderChats() {
           (member) => `
             <label>
               <input type="checkbox" value="${member.id}" />
-              <span>${escapeHtml(member.fullName)} <small>@${escapeHtml(member.username)}</small></span>
+              <span>${escapeHtml(member.fullName)} <small>@${escapeHtml(member.username)}${modBadge(member)}${member.isBot ? " - bot" : ""}</small></span>
             </label>
           `,
         )
@@ -1122,7 +1136,7 @@ function renderChats() {
           const unread = unreadChatCount(chat);
           return `
             <button class="chat-item ${chat.id === state.activeChatId ? "active" : ""}" data-chat-id="${chat.id}" type="button">
-              <span class="chat-avatar">${chat.direct ? initials(chatDisplayName(chat)) : "GC"}</span>
+              <span class="chat-avatar">${chat.direct ? initials(chatDisplayName(chat)) : chat.members.includes("user_iris_bot") ? "IB" : "GC"}</span>
               <span>
                 <strong>${escapeHtml(chatDisplayName(chat))} ${unread ? `<b class="unread-dot">${unread}</b>` : ""}</strong>
                 <small>${last ? escapeHtml(last.system ? last.body : last.body) : `${chat.members.length} members`}</small>
@@ -1139,7 +1153,7 @@ function renderChats() {
           <span class="chat-avatar">${initials(user.fullName)}</span>
           <span>
             <strong>${escapeHtml(user.fullName)}</strong>
-            <small>@${escapeHtml(user.username)} - start direct message</small>
+            <small>@${escapeHtml(user.username)}${modBadge(user)} - start direct message</small>
           </span>
         </button>
       `,
@@ -1186,7 +1200,7 @@ function renderMessages() {
                   ? `<div class="reply-card">Reply to ${escapeHtml(repliedAuthor?.username || "user")}: ${renderTextWithMentions(replied.body.slice(0, 90))}</div>`
                   : ""
               }
-              <strong><button class="inline-profile-link" data-profile-id="${author?.id || ""}" type="button">${escapeHtml(author?.fullName || "Unknown")}</button> - ${formatTime(message.createdAt)}</strong>
+              <strong><button class="inline-profile-link" data-profile-id="${author?.id || ""}" type="button">${escapeHtml(author?.fullName || "Unknown")}${modBadge(author)}</button> - ${formatTime(message.createdAt)}</strong>
               <span class="message-body">${renderTextWithMentions(message.body)}</span>
               ${
                 reactionCounts.length
@@ -1224,7 +1238,7 @@ function renderNotifications() {
             <article class="notification-card ${notification.read ? "" : "unread"} ${notification.type === "admin-strike" ? "admin-strike" : ""}">
               <button class="avatar profile-link" data-profile-id="${notification.actor?.id || ""}" type="button">${initials(notification.actor?.fullName || "C")}</button>
               <div>
-                <button class="inline-profile-link" data-profile-id="${notification.actor?.id || ""}" type="button">${escapeHtml(notification.type === "admin-strike" ? "Closebook Admin" : notification.actor?.username || "Closebook")}</button>
+                <button class="inline-profile-link" data-profile-id="${notification.actor?.id || ""}" type="button">${escapeHtml(notification.type === "admin-strike" ? "Closebook Admin" : notification.actor?.username || "Closebook")}${notification.type === "admin-strike" ? "" : modBadge(notification.actor)}</button>
                 <p>${renderTextWithMentions(notification.text)}</p>
                 <span>${formatTime(notification.createdAt)}</span>
               </div>
@@ -1276,7 +1290,7 @@ function renderProfile() {
       <div class="avatar">${initials(profileUser.fullName)}</div>
       <div>
         <h2>${escapeHtml(profileUser.fullName)}</h2>
-        <p class="profile-muted">@${escapeHtml(profileUser.username)} - ${profileUser.age} years old - ${escapeHtml(profileUser.email)}</p>
+        <p class="profile-muted">@${escapeHtml(profileUser.username)}${modBadge(profileUser)} - ${profileUser.age} years old - ${escapeHtml(profileUser.email)}</p>
         ${profileUser.bio ? `<p class="profile-bio">${escapeHtml(profileUser.bio)}</p>` : ""}
         ${profileUser.website ? `<p class="profile-muted">${escapeHtml(profileUser.website)}</p>` : ""}
       </div>
@@ -1297,6 +1311,7 @@ function renderProfile() {
             <button class="chip-btn" data-report-user="${profileUser.id}" type="button">Report</button>
           </div>`
     }
+    ${!isOwnProfile && state.currentUser.isModerator ? moderatorKarmaControls(profileUser.id) : ""}
     <div class="karma-title">${profileUser.karma} karma - ${karmaRank(profileUser.karma)}</div>
     <div class="stat-grid">
       <div class="stat-box"><strong>${userPosts.length}</strong><span class="profile-muted">Posts</span></div>
@@ -1348,6 +1363,33 @@ async function submitReport(targetType, targetId, title) {
     }),
   });
   window.alert("Report sent to the admin team.");
+}
+
+async function adjustModeratorKarma(userId, direction) {
+  const rawAmount = window.prompt("Moderator karma adjustment amount (1 to 10):", "10");
+  if (rawAmount === null) return;
+
+  const amount = Number(rawAmount);
+  if (!Number.isInteger(amount) || amount < 1 || amount > 10) {
+    window.alert("Enter a whole number from 1 to 10.");
+    return;
+  }
+
+  await api(`/api/users/${userId}/karma/moderate`, {
+    method: "POST",
+    body: JSON.stringify({ amount: amount * direction }),
+  });
+  await refreshSocial();
+}
+
+function moderatorKarmaControls(userId) {
+  return `
+    <div class="mod-karma-tools">
+      <span>Moderator karma</span>
+      <button class="chip-btn" data-mod-karma="1" data-user-id="${userId}" type="button">+ up to 10</button>
+      <button class="chip-btn danger" data-mod-karma="-1" data-user-id="${userId}" type="button">- up to 10</button>
+    </div>
+  `;
 }
 
 function reactionSummary(reactions) {
@@ -1416,7 +1458,7 @@ function renderChatSettings(chat) {
       <div class="chat-profile-strip">
         <button class="identity profile-link" data-profile-id="${other?.id || ""}" type="button">
           <span class="chat-avatar">${initials(other?.fullName || "DM")}</span>
-          <span><strong>${escapeHtml(other?.fullName || "Direct message")}</strong><small>@${escapeHtml(other?.username || "user")}</small></span>
+          <span><strong>${escapeHtml(other?.fullName || "Direct message")}${modBadge(other)}</strong><small>@${escapeHtml(other?.username || "user")}</small></span>
         </button>
         <span class="chat-badge">Direct</span>
       </div>
@@ -1426,24 +1468,47 @@ function renderChatSettings(chat) {
 
   const isAdmin = chat.creatorId === state.currentUser.id || chat.admins.includes(state.currentUser.id);
   const availableUsers = state.users.filter((user) => !chat.members.includes(user.id));
+  const irisInChat = chat.members.includes("user_iris_bot");
+  const irisActive = irisInChat && chat.admins.includes("user_iris_bot");
   chatSettings.innerHTML = `
     <details class="group-settings">
       <summary>
         <span>Group settings</span>
-        <b>${chat.members.length} members - ${chat.admins.length} admins</b>
+        <b>${chat.members.length} members - ${chat.admins.length} admins ${irisActive ? "- Iris active" : irisInChat ? "- Iris needs admin" : ""}</b>
       </summary>
+      <div class="bot-status ${irisActive ? "active" : ""}">
+        <strong>Iris Bot</strong>
+        <span>${irisActive ? "Moderation commands are active." : irisInChat ? "Make Iris Bot an admin to enable commands." : "Add Iris Bot as a member, then make it admin."}</span>
+      </div>
+      <div class="rules-card">
+        <strong>Group rules</strong>
+        <p>${chat.moderation?.rules ? renderTextWithMentions(chat.moderation.rules) : "No rules set. Admins can type /set rules <rules>."}</p>
+      </div>
       ${
         isAdmin
           ? `<form data-rename-chat-form class="group-rename">
               <input name="name" value="${escapeAttribute(chat.name)}" maxlength="40" />
               <button class="chip-btn" type="submit">Rename</button>
             </form>
-            <div class="group-add">
-              <select data-add-member-select>
-                <option value="">Add member...</option>
-                ${availableUsers.map((user) => `<option value="${user.id}">${escapeHtml(user.fullName)} (@${escapeHtml(user.username)})</option>`).join("")}
-              </select>
-              <button class="chip-btn" data-chat-action="add-member" type="button">Add</button>
+            <details class="add-members-box">
+              <summary type="button">Add members</summary>
+              <div class="group-add">
+                <select data-add-member-select>
+                  <option value="">Choose a user or bot...</option>
+                  ${availableUsers
+                    .map(
+                      (user) =>
+                        `<option value="${user.id}">${escapeHtml(user.fullName)} (@${escapeHtml(user.username)})${user.isModerator ? " - MOD" : ""}${user.isBot ? " - Bot" : ""}</option>`,
+                    )
+                    .join("")}
+                </select>
+                <button class="chip-btn" data-chat-action="add-member" type="button">Add to group</button>
+              </div>
+              <p class="profile-muted">Bots are added manually like users. Iris Bot only moderates after an admin makes it admin.</p>
+            </details>
+            <div class="command-card">
+              <strong>Iris commands</strong>
+              <span>/help</span><span>/set rules</span><span>/rules</span><span>/ban @user</span><span>/unban @user</span><span>/kick @user</span><span>/mute @user 10</span><span>/warn @user</span><span>/warnings @user</span>
             </div>`
           : ""
       }
@@ -1458,7 +1523,7 @@ function renderChatSettings(chat) {
               <div class="member-row">
                 <button class="identity profile-link" data-profile-id="${memberId}" type="button">
                   <span class="chat-avatar">${initials(member?.fullName || "U")}</span>
-                  <span><strong>${escapeHtml(member?.fullName || "User")}</strong><small>${memberIsCreator ? "Creator" : memberIsAdmin ? "Admin" : "Member"}</small></span>
+                  <span><strong>${escapeHtml(member?.fullName || "User")}${modBadge(member)}</strong><small>@${escapeHtml(member?.username || "user")} - ${member?.isBot ? "Bot" : memberIsCreator ? "Creator" : memberIsAdmin ? "Admin" : "Member"}</small></span>
                 </button>
                 ${
                   canManage
@@ -1531,7 +1596,7 @@ function renderMentionSuggestions(input, box, users) {
       (user, index) => `
         <button class="${index === 0 ? "active" : ""}" data-insert-mention="${user.username}" type="button">
           <span class="avatar">${initials(user.fullName)}</span>
-          <span><strong>@${escapeHtml(user.username)}</strong><small>${escapeHtml(user.fullName)}</small></span>
+          <span><strong>@${escapeHtml(user.username)}${modBadge(user)}</strong><small>${escapeHtml(user.fullName)}</small></span>
         </button>
       `,
     )
@@ -1610,9 +1675,13 @@ function renderTextWithMentions(value) {
     (match, prefix, username) => {
       const user = state.users.find((item) => item.username.toLowerCase() === username.toLowerCase());
       if (!user) return `${prefix}<span class="mention">@${username}</span>`;
-      return `${prefix}<button class="mention mention-link" data-mention-user="${user.id}" type="button">@${escapeHtml(user.username)}</button>`;
+      return `${prefix}<button class="mention mention-link" data-mention-user="${user.id}" type="button">@${escapeHtml(user.username)}${modBadge(user)}</button>`;
     },
   );
+}
+
+function modBadge(user) {
+  return user?.isModerator ? `<span class="mod-badge" title="Closebook Moderator">MOD</span>` : "";
 }
 
 function escapeAttribute(value) {
