@@ -13,6 +13,7 @@ let state = {
   activeChatId: savedActiveView === "chats" ? localStorage.getItem(ACTIVE_CHAT_KEY) || null : null,
   viewedProfileId: localStorage.getItem("closial-view-profile") || null,
   previewPostId: null,
+  typing: {},
 };
 
 const authScreen = document.querySelector("#auth-screen");
@@ -73,10 +74,19 @@ const chatBackBtn = document.querySelector("#chat-back-btn");
 const chatLayout = document.querySelector(".chat-layout");
 const chatSettings = document.querySelector("#chat-settings");
 const replyPreview = document.querySelector("#reply-preview");
+const openMediaPicker = document.querySelector("#open-media-picker");
+const mediaPicker = document.querySelector("#media-picker");
+const voiceMessageBtn = document.querySelector("#voice-message-btn");
+const typingIndicator = document.querySelector("#typing-indicator");
 
 let selectedImageData = "";
 let liveSource = null;
 let refreshTimer = null;
+let typingTimer = null;
+let typingStopTimer = null;
+let lastTypingSent = 0;
+let mediaRecorder = null;
+let voiceChunks = [];
 let peopleQuery = "";
 let feedFilter = "all";
 let activeTag = "";
@@ -84,6 +94,15 @@ let replyToMessageId = "";
 let profileTab = "posts";
 let profileConnectionMode = "";
 let chatQuery = "";
+const EMOJI_ITEMS = [
+  ["😀", "grin happy smile"], ["😃", "happy smile"], ["😄", "laugh smile"], ["😁", "beam smile"], ["😆", "laugh"], ["😂", "tears laugh"], ["🤣", "rolling laugh"], ["😊", "blush happy"],
+  ["😍", "love heart eyes"], ["😘", "kiss"], ["😎", "cool sunglasses"], ["🤩", "star eyes"], ["🥳", "party"], ["😭", "cry tears"], ["😤", "triumph"], ["😡", "angry"],
+  ["😈", "devil savage"], ["💀", "dead skull"], ["🤡", "clown"], ["👀", "eyes"], ["🙌", "celebrate"], ["👏", "clap"], ["🙏", "pray"], ["💪", "strong flex"],
+  ["👍", "thumbs up"], ["👎", "thumbs down"], ["🔥", "fire"], ["✨", "sparkle"], ["💯", "hundred"], ["❤️", "heart love"], ["💙", "blue heart"], ["💜", "purple heart"],
+  ["🎉", "confetti"], ["🏆", "trophy"], ["👑", "crown"], ["⚡", "bolt"], ["🌟", "star"], ["🚀", "rocket"], ["📸", "camera"], ["🎧", "music"],
+];
+const GIF_ITEMS = ["Happy dance", "Mind blown", "Applause", "Mic drop", "Side eye", "No way", "Big laugh", "Victory", "Face palm", "Plot twist", "Respect", "Shock"];
+const STICKER_ITEMS = ["Savage Mode", "Big W", "Certified Chaos", "Main Character", "GOD Tier", "Villain Arc", "Respect+", "Karma Blast", "Too Clean", "Final Boss", "Mood", "Legend"];
 const MESSAGE_REACTIONS = ["👍", "❤️", "😂", "🔥"];
 
 function token() {
@@ -412,12 +431,63 @@ postBody.addEventListener("keydown", (event) => {
 });
 
 messageInput.addEventListener("input", () => {
+  autoResizeMessageInput();
+  updateComposerMode();
   renderMentionSuggestions(messageInput, chatMentionSuggestions, mentionableChatUsers());
+  sendTypingState(true);
+  clearTimeout(typingStopTimer);
+  typingStopTimer = setTimeout(() => sendTypingState(false), 1800);
 });
 
 messageInput.addEventListener("keydown", (event) => {
   handleMentionSuggestionKeys(event, messageInput, chatMentionSuggestions);
+  if (event.defaultPrevented) return;
+
+  if (event.key === "Enter" && !event.shiftKey && !isMobileInputDevice()) {
+    event.preventDefault();
+    messageForm.requestSubmit();
+    return;
+  }
+
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+    event.preventDefault();
+    messageForm.requestSubmit();
+  }
 });
+
+openMediaPicker.addEventListener("click", () => {
+  renderMediaPicker();
+  mediaPicker.classList.toggle("hidden");
+});
+
+mediaPicker.addEventListener("input", (event) => {
+  if (event.target.matches("[data-media-search]")) renderMediaPicker(event.target.value);
+});
+
+mediaPicker.addEventListener("click", async (event) => {
+  const emoji = event.target.closest("[data-insert-emoji]");
+  if (emoji) {
+    insertAtCursor(messageInput, emoji.dataset.insertEmoji);
+    autoResizeMessageInput();
+    messageInput.focus();
+    return;
+  }
+
+  const gif = event.target.closest("[data-send-gif]");
+  if (gif) {
+    await sendChatMessage(`[gif:${gif.dataset.sendGif}]`, { type: "gif" });
+    mediaPicker.classList.add("hidden");
+    return;
+  }
+
+  const sticker = event.target.closest("[data-send-sticker]");
+  if (sticker) {
+    await sendChatMessage(`[sticker:${sticker.dataset.sendSticker}]`, { type: "sticker" });
+    mediaPicker.classList.add("hidden");
+  }
+});
+
+voiceMessageBtn.addEventListener("click", toggleVoiceRecording);
 
 imageInput.addEventListener("change", async () => {
   postMessage.textContent = "";
@@ -797,21 +867,7 @@ messageForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const message = messageInput.value.trim();
   if (!state.activeChatId || !message) return;
-  messageStatus.textContent = "";
-
-  try {
-    await api(`/api/chats/${state.activeChatId}/messages`, {
-      method: "POST",
-      body: JSON.stringify({ body: message, replyTo: replyToMessageId }),
-    });
-
-    messageForm.reset();
-    hideMentionSuggestions(chatMentionSuggestions);
-    clearReply();
-    await refreshChats();
-  } catch (error) {
-    messageStatus.textContent = error.message;
-  }
+  await sendChatMessage(message, { type: "text" });
 });
 
 async function bootstrap() {
@@ -844,6 +900,13 @@ function connectLiveStream() {
   liveSource.addEventListener("error", () => setLiveState(false));
   liveSource.addEventListener("social", () => scheduleRealtimeRefresh("social"));
   liveSource.addEventListener("chat", () => scheduleRealtimeRefresh("chat"));
+  liveSource.addEventListener("typing", (event) => {
+    try {
+      handleTypingEvent(JSON.parse(event.data));
+    } catch {
+      // Ignore malformed realtime payloads.
+    }
+  });
 }
 
 function closeLiveStream() {
@@ -1332,6 +1395,7 @@ function renderMessages() {
 
   activeChatHeader.querySelector("span").textContent = chatDisplayName(chat);
   renderChatSettings(chat);
+  renderTypingIndicator(chat);
   messagesList.innerHTML = chat.messages.length
     ? chat.messages
         .map((message) => {
@@ -1341,6 +1405,7 @@ function renderMessages() {
           const repliedAuthor = replied ? userById(replied.authorId) : null;
           const currentReaction = message.reactions?.[state.currentUser.id] || "";
           const reactionCounts = reactionSummary(message.reactions || {});
+          const receipt = mine ? readReceiptText(chat, message) : "";
           if (message.system) {
             return `<div class="system-message">${escapeHtml(message.body)}</div>`;
           }
@@ -1352,7 +1417,8 @@ function renderMessages() {
                   : ""
               }
               <strong><button class="inline-profile-link" data-profile-id="${author?.id || ""}" type="button">${escapeHtml(author?.fullName || "Unknown")}${modBadge(author)}</button> - ${formatTime(message.createdAt)}</strong>
-              <span class="message-body">${renderTextWithMentions(message.body)}</span>
+              <span class="message-body">${renderMessageContent(message)}</span>
+              ${receipt ? `<span class="read-receipt">${escapeHtml(receipt)}</span>` : ""}
               ${
                 reactionCounts.length
                   ? `<div class="reaction-summary">${reactionCounts
@@ -1892,6 +1958,197 @@ function clearReply() {
   replyToMessageId = "";
   replyPreview.innerHTML = "";
   replyPreview.classList.add("hidden");
+}
+
+function renderMediaPicker(query = "") {
+  const q = query.trim().toLowerCase();
+  const emojis = EMOJI_ITEMS.filter(([emoji, label]) => !q || label.includes(q) || emoji.includes(q));
+  const gifs = GIF_ITEMS.filter((item) => !q || item.toLowerCase().includes(q));
+  const stickers = STICKER_ITEMS.filter((item) => !q || item.toLowerCase().includes(q));
+
+  mediaPicker.innerHTML = `
+    <input class="media-search" data-media-search type="search" value="${escapeAttribute(query)}" placeholder="Search emoji, GIFs, stickers..." />
+    <div class="media-picker-section">
+      <strong>Emoji</strong>
+      <div class="media-grid emoji-grid">
+        ${emojis.map(([emoji, label]) => `<button title="${escapeAttribute(label)}" data-insert-emoji="${escapeAttribute(emoji)}" type="button">${escapeHtml(emoji)}</button>`).join("") || `<span class="media-empty">No emoji found</span>`}
+      </div>
+    </div>
+    <div class="media-picker-section">
+      <strong>GIFs</strong>
+      <div class="media-grid text-grid">
+        ${gifs.map((item) => `<button data-send-gif="${escapeAttribute(item)}" type="button">${escapeHtml(item)}</button>`).join("") || `<span class="media-empty">No GIFs found</span>`}
+      </div>
+    </div>
+    <div class="media-picker-section">
+      <strong>Stickers</strong>
+      <div class="media-grid text-grid">
+        ${stickers.map((item) => `<button data-send-sticker="${escapeAttribute(item)}" type="button">${escapeHtml(item)}</button>`).join("") || `<span class="media-empty">No stickers found</span>`}
+      </div>
+    </div>
+  `;
+  mediaPicker.querySelector("[data-media-search]")?.focus();
+}
+
+async function sendChatMessage(body, options = {}) {
+  if (!state.activeChatId || (!body && options.type !== "voice")) return;
+  messageStatus.textContent = "";
+
+  try {
+    await api(`/api/chats/${state.activeChatId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({
+        body,
+        type: options.type || "text",
+        mediaData: options.mediaData || "",
+        replyTo: replyToMessageId,
+      }),
+    });
+
+    messageForm.reset();
+    autoResizeMessageInput();
+    updateComposerMode();
+    hideMentionSuggestions(chatMentionSuggestions);
+    mediaPicker.classList.add("hidden");
+    clearReply();
+    sendTypingState(false);
+    await refreshChats();
+  } catch (error) {
+    messageStatus.textContent = error.message;
+  }
+}
+
+function renderMessageContent(message) {
+  if (message.type === "voice" && message.mediaData) {
+    return `<audio class="voice-player" controls src="${escapeAttribute(message.mediaData)}"></audio>`;
+  }
+
+  if (message.type === "gif") {
+    return `<span class="gif-message"><b>GIF</b>${escapeHtml(mediaLabel(message.body, "gif"))}</span>`;
+  }
+
+  if (message.type === "sticker") {
+    return `<span class="sticker-message">${escapeHtml(mediaLabel(message.body, "sticker"))}</span>`;
+  }
+
+  return renderTextWithMentions(message.body);
+}
+
+function mediaLabel(value, type) {
+  return String(value || "").replace(new RegExp(`^\\[${type}:|\\]$`, "g"), "");
+}
+
+function readReceiptText(chat, message) {
+  const readers = chat.members
+    .filter((id) => id !== state.currentUser.id && Number(chat.readBy?.[id] || 0) >= message.createdAt)
+    .map((id) => userById(id)?.username)
+    .filter(Boolean);
+
+  if (!readers.length) return "Delivered";
+  if (chat.direct) return "Seen";
+  return `Seen by ${readers.slice(0, 3).join(", ")}${readers.length > 3 ? ` +${readers.length - 3}` : ""}`;
+}
+
+function renderTypingIndicator(chat) {
+  const typingUsers = Object.entries(state.typing[chat.id] || {})
+    .filter(([id, until]) => id !== state.currentUser.id && until > Date.now())
+    .map(([id]) => userById(id)?.username)
+    .filter(Boolean);
+
+  typingIndicator.textContent = typingUsers.length
+    ? `${typingUsers.slice(0, 2).join(", ")} ${typingUsers.length === 1 ? "is" : "are"} typing...`
+    : "";
+  typingIndicator.classList.toggle("hidden", !typingUsers.length);
+}
+
+function handleTypingEvent(payload) {
+  if (!payload.chatId || payload.actorId === state.currentUser?.id) return;
+  state.typing[payload.chatId] = state.typing[payload.chatId] || {};
+  if (payload.typing) {
+    state.typing[payload.chatId][payload.actorId] = Date.now() + 2500;
+  } else {
+    delete state.typing[payload.chatId][payload.actorId];
+  }
+  renderTypingIndicator(activeChat() || {});
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => renderTypingIndicator(activeChat() || {}), 2600);
+}
+
+async function sendTypingState(typing) {
+  if (!state.activeChatId) return;
+  if (typing && Date.now() - lastTypingSent < 1200) return;
+  lastTypingSent = typing ? Date.now() : 0;
+  try {
+    await api(`/api/chats/${state.activeChatId}/typing`, {
+      method: "POST",
+      body: JSON.stringify({ typing }),
+    });
+  } catch {
+    // Typing indicators are best-effort.
+  }
+}
+
+function insertAtCursor(input, value) {
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
+  input.value = `${input.value.slice(0, start)}${value}${input.value.slice(end)}`;
+  input.setSelectionRange(start + value.length, start + value.length);
+  input.dispatchEvent(new Event("input"));
+}
+
+async function toggleVoiceRecording() {
+  if (mediaRecorder?.state === "recording") {
+    mediaRecorder.stop();
+    return;
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+    messageStatus.textContent = "Voice recording is not supported in this browser.";
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    voiceChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size) voiceChunks.push(event.data);
+    });
+    mediaRecorder.addEventListener("stop", async () => {
+      stream.getTracks().forEach((track) => track.stop());
+      voiceMessageBtn.classList.remove("recording");
+      const blob = new Blob(voiceChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+      const mediaData = await blobToDataUrl(blob);
+      await sendChatMessage("Voice message", { type: "voice", mediaData });
+    });
+    mediaRecorder.start();
+    voiceMessageBtn.classList.add("recording");
+    messageStatus.textContent = "Recording... tap the mic again to send.";
+  } catch {
+    messageStatus.textContent = "Microphone permission was not allowed.";
+  }
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function autoResizeMessageInput() {
+  messageInput.style.height = "auto";
+  messageInput.style.height = `${Math.min(messageInput.scrollHeight, 150)}px`;
+}
+
+function updateComposerMode() {
+  messageForm.classList.toggle("has-text", Boolean(messageInput.value.trim()));
+}
+
+function isMobileInputDevice() {
+  return window.matchMedia("(max-width: 860px), (pointer: coarse)").matches;
 }
 
 function mentionablePostUsers() {

@@ -673,14 +673,20 @@ async function handleApi(req, res, url) {
     const body = await readBody(req);
     const chat = db.chats.find((item) => item.id === messageAction[1]);
     const text = clean(body.body);
+    const type = clean(body.type) || "text";
+    const mediaData = String(body.mediaData || "");
     const replyTo = clean(body.replyTo);
+    const allowedMessageTypes = ["text", "emoji", "gif", "sticker", "voice"];
 
     if (!chat || !chat.members.includes(currentUser.id)) {
       return sendJson(res, 404, { error: "Chat not found." });
     }
     if (isChatRestricted(currentUser)) return sendJson(res, 403, { error: moderationError(currentUser, "You cannot send messages at the moment.") });
     if (isGroupMuted(chat, currentUser.id)) return sendJson(res, 403, { error: "You are muted in this group right now." });
-    if (!text) return sendJson(res, 400, { error: "Message cannot be empty." });
+    if (!allowedMessageTypes.includes(type)) return sendJson(res, 400, { error: "Choose a valid message type." });
+    if (!text && type !== "voice") return sendJson(res, 400, { error: "Message cannot be empty." });
+    if (type === "voice" && !mediaData.startsWith("data:audio/")) return sendJson(res, 400, { error: "Voice message is missing audio." });
+    if (mediaData.length > 2_500_000) return sendJson(res, 400, { error: "Media message is too large." });
 
     if (!chat.direct && text.startsWith("/")) {
       const commandHandled = handleIrisCommand(db, chat, currentUser, text);
@@ -693,6 +699,8 @@ async function handleApi(req, res, url) {
       id: uid("message"),
       authorId: currentUser.id,
       body: text,
+      type,
+      mediaData: type === "voice" ? mediaData : "",
       replyTo: chat.messages.some((message) => message.id === replyTo) ? replyTo : "",
       reactions: {},
       createdAt: Date.now(),
@@ -715,6 +723,25 @@ async function handleApi(req, res, url) {
     broadcast("chat", { actorId: currentUser.id, chatId: chat.id, members: chat.members });
 
     return sendJson(res, 201, { ok: true });
+  }
+
+  const typingAction = url.pathname.match(/^\/api\/chats\/([^/]+)\/typing$/);
+  if (req.method === "POST" && typingAction) {
+    const body = await readBody(req);
+    const chat = db.chats.find((item) => item.id === typingAction[1]);
+
+    if (!chat || !chat.members.includes(currentUser.id)) {
+      return sendJson(res, 404, { error: "Chat not found." });
+    }
+
+    broadcast("typing", {
+      actorId: currentUser.id,
+      chatId: chat.id,
+      typing: Boolean(body.typing),
+      members: chat.members,
+    });
+
+    return sendJson(res, 200, { ok: true });
   }
 
   const reactionAction = url.pathname.match(/^\/api\/chats\/([^/]+)\/messages\/([^/]+)\/reactions$/);
@@ -794,7 +821,7 @@ async function handleApi(req, res, url) {
       [currentUser.id]: Date.now(),
     };
     writeDb(db);
-    broadcast("chat", { actorId: currentUser.id, chatId: chat.id, members: [currentUser.id] });
+    broadcast("chat", { actorId: currentUser.id, chatId: chat.id, members: chat.members });
 
     return sendJson(res, 200, { ok: true });
   }
@@ -1438,6 +1465,8 @@ function normalizeDb(db) {
       message.replyTo = message.replyTo || "";
       message.reactions = message.reactions && typeof message.reactions === "object" ? message.reactions : {};
       message.system = Boolean(message.system);
+      message.type = message.type || "text";
+      message.mediaData = message.mediaData || "";
     });
     chat.readBy = chat.readBy || {};
   });

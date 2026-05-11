@@ -238,15 +238,23 @@
               <div id="messages-list" class="messages-list"></div>
               <form id="message-form" class="message-form">
                 <div id="reply-preview" class="reply-preview hidden"></div>
-                <input
-                  name="message"
-                  type="text"
-                  placeholder="Write a message..."
-                  autocomplete="off"
-                  required
-                />
+                <div class="message-input-shell">
+                  <div class="media-picker-wrap">
+                    <button id="open-media-picker" class="composer-tool" type="button" aria-label="Open emoji, GIF, and sticker picker">☺</button>
+                    <div id="media-picker" class="media-picker hidden"></div>
+                  </div>
+                  <textarea
+                    name="message"
+                    placeholder="Write a message..."
+                    autocomplete="off"
+                    required
+                    rows="1"
+                  ></textarea>
+                  <button id="voice-message-btn" class="composer-tool" type="button" aria-label="Record voice message">🎙</button>
+                </div>
                 <button class="primary-action compact" type="submit">Send</button>
                 <div id="chat-mention-suggestions" class="mention-suggestions hidden"></div>
+                <p id="typing-indicator" class="typing-indicator hidden"></p>
                 <p id="message-status" class="form-note"></p>
               </form>
             </section>
