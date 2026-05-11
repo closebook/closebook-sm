@@ -11,13 +11,16 @@
       "website": "",
       "karma": 1000,
       "votedUsers": {
-        "user_1777740166287_9fa412a01a62": 1
+        "user_1777740166287_9fa412a01a62": 1,
+        "user_1778419429267_01635a2d0b13": 1
       },
       "following": [
+        "user_iris_bot",
         "user_1777740166287_9fa412a01a62"
       ],
       "followers": [
-        "user_1777740166287_9fa412a01a62"
+        "user_1777740166287_9fa412a01a62",
+        "user_1778507892148_16b62c154fdc"
       ],
       "savedPosts": [],
       "createdAt": 1777740146651,
@@ -29,7 +32,7 @@
         "chatRestricted": false,
         "appRestricted": false,
         "reason": "",
-        "updatedAt": 1778419147141,
+        "updatedAt": 1778435814271,
         "strikes": [
           {
             "id": "strike_1778419109265_989a1aec1229",
@@ -44,6 +47,12 @@
             "createdAt": 1778419147141
           }
         ]
+      },
+      "isBot": false,
+      "isModerator": true,
+      "karmaVoteTimes": {
+        "user_1778419429267_01635a2d0b13": 1778504874360,
+        "user_1777740166287_9fa412a01a62": 1778505537404
       }
     },
     {
@@ -55,17 +64,21 @@
       "passwordHash": "0a1b086f072513ebb1d3d715166583135b706781ce4948cb1eb90b9837eb5707",
       "bio": "",
       "website": "",
-      "karma": 51,
+      "karma": 150,
       "votedUsers": {
         "user_1777740146651_e496c9a55621": 1
       },
       "following": [
-        "user_1777740146651_e496c9a55621"
+        "user_1777740146651_e496c9a55621",
+        "user_1778419429267_01635a2d0b13"
       ],
       "followers": [
-        "user_1777740146651_e496c9a55621"
+        "user_1777740146651_e496c9a55621",
+        "user_1778507892148_16b62c154fdc"
       ],
-      "savedPosts": [],
+      "savedPosts": [
+        "post_1778503238064_db6d68b96c47"
+      ],
       "createdAt": 1777740166287,
       "moderation": {
         "banned": false,
@@ -77,7 +90,12 @@
         "strikes": []
       },
       "registeredIp": "",
-      "lastIp": ""
+      "lastIp": "::ffff:127.0.0.1",
+      "isBot": false,
+      "isModerator": false,
+      "karmaVoteTimes": {
+        "user_1777740146651_e496c9a55621": 1778504910375
+      }
     },
     {
       "id": "user_1778419429267_01635a2d0b13",
@@ -86,12 +104,15 @@
       "age": 23,
       "email": "shivanshsingh759@gmail.com",
       "passwordHash": "0a1b086f072513ebb1d3d715166583135b706781ce4948cb1eb90b9837eb5707",
-      "bio": "",
-      "website": "",
-      "karma": 0,
+      "bio": "programmer",
+      "website": "https://closebook.github.io/graveyard/",
+      "karma": 111,
       "votedUsers": {},
       "following": [],
-      "followers": [],
+      "followers": [
+        "user_1777740166287_9fa412a01a62",
+        "user_1778507892148_16b62c154fdc"
+      ],
       "savedPosts": [],
       "moderation": {
         "banned": false,
@@ -104,7 +125,82 @@
       },
       "registeredIp": "::ffff:192.168.56.1",
       "lastIp": "::ffff:192.168.56.1",
-      "createdAt": 1778419429268
+      "createdAt": 1778419429268,
+      "isBot": false,
+      "isModerator": false,
+      "karmaVoteTimes": {}
+    },
+    {
+      "id": "user_iris_bot",
+      "fullName": "Iris Bot",
+      "username": "irisbot",
+      "age": 1,
+      "email": "irisbot@closebook.local",
+      "passwordHash": "",
+      "bio": "Default Closebook group moderation bot.",
+      "website": "",
+      "karma": 100,
+      "votedUsers": {},
+      "following": [],
+      "followers": [
+        "user_1777740146651_e496c9a55621",
+        "user_1778507892148_16b62c154fdc"
+      ],
+      "savedPosts": [],
+      "moderation": {
+        "banned": false,
+        "muted": false,
+        "chatRestricted": false,
+        "appRestricted": false,
+        "reason": "",
+        "updatedAt": 0,
+        "strikes": []
+      },
+      "registeredIp": "system",
+      "lastIp": "system",
+      "isBot": true,
+      "createdAt": 1778434565133,
+      "isModerator": false,
+      "karmaVoteTimes": {}
+    },
+    {
+      "id": "user_1778507892148_16b62c154fdc",
+      "fullName": "Alex Anonov",
+      "username": "anonov",
+      "age": 20,
+      "email": "alex24outofnothing@gmail.com",
+      "passwordHash": "0a1b086f072513ebb1d3d715166583135b706781ce4948cb1eb90b9837eb5707",
+      "bio": "",
+      "website": "",
+      "karma": 0,
+      "votedUsers": {
+        "user_1777740146651_e496c9a55621": -1
+      },
+      "karmaVoteTimes": {
+        "user_1777740146651_e496c9a55621": 1778507926905
+      },
+      "following": [
+        "user_1777740146651_e496c9a55621",
+        "user_1777740166287_9fa412a01a62",
+        "user_1778419429267_01635a2d0b13",
+        "user_iris_bot"
+      ],
+      "followers": [],
+      "savedPosts": [],
+      "isModerator": false,
+      "moderation": {
+        "banned": false,
+        "muted": false,
+        "chatRestricted": false,
+        "appRestricted": false,
+        "reason": "",
+        "updatedAt": 0,
+        "strikes": []
+      },
+      "registeredIp": "::ffff:192.168.31.217",
+      "lastIp": "::ffff:192.168.31.217",
+      "createdAt": 1778507892148,
+      "isBot": false
     }
   ],
   "posts": [
@@ -124,21 +220,35 @@
           "authorId": "user_1777740166287_9fa412a01a62",
           "body": "nice bro",
           "createdAt": 1777741007102
+        },
+        {
+          "id": "comment_1778503111498_5527b8e73f18",
+          "authorId": "user_1777740146651_e496c9a55621",
+          "body": "damn bro",
+          "createdAt": 1778503111498
         }
       ],
       "createdAt": 1777740997112
     },
     {
-      "id": "post_1778421438797_6708fd697394",
-      "authorId": "user_1778419429267_01635a2d0b13",
-      "body": "mera bhai @Siddharth",
+      "id": "post_1778433491424_df64215d85e2",
+      "authorId": "user_1777740146651_e496c9a55621",
+      "body": "This is the proof that posts can be deleted.",
       "imageData": "",
-      "likes": [
-        "user_1777740146651_e496c9a55621"
-      ],
+      "likes": [],
       "shares": [],
       "comments": [],
-      "createdAt": 1778421438798
+      "createdAt": 1778433491432
+    },
+    {
+      "id": "post_1778503238064_db6d68b96c47",
+      "authorId": "user_1777740146651_e496c9a55621",
+      "body": "#closebook\n\nhello from mod",
+      "imageData": "",
+      "likes": [],
+      "shares": [],
+      "comments": [],
+      "createdAt": 1778503238064
     }
   ],
   "chats": [
@@ -295,9 +405,15 @@
       ],
       "readBy": {
         "user_1777740166287_9fa412a01a62": 1777741893007,
-        "user_1777740146651_e496c9a55621": 1778420495205
+        "user_1777740146651_e496c9a55621": 1778433718878
       },
-      "createdAt": 1777740177647
+      "createdAt": 1777740177647,
+      "moderation": {
+        "rules": "",
+        "bannedUserIds": [],
+        "mutedUntil": {},
+        "warnings": {}
+      }
     },
     {
       "id": "chat_1778419444569_ffbbde0fd8ad",
@@ -381,15 +497,42 @@
           "authorId": "user_1777740146651_e496c9a55621",
           "body": "ok",
           "replyTo": "",
+          "reactions": {
+            "user_1778419429267_01635a2d0b13": "👍"
+          },
+          "createdAt": 1778421835728,
+          "system": false
+        },
+        {
+          "id": "message_1778434613673_4c16e2f02703",
+          "authorId": "user_iris_bot",
+          "body": "Iris Bot is not active yet. Add Iris Bot to this group and make it admin first.",
+          "replyTo": "",
           "reactions": {},
-          "createdAt": 1778421835728
+          "system": false,
+          "createdAt": 1778434613673
+        },
+        {
+          "id": "message_1778434820605_fda5831f6549",
+          "authorId": "user_iris_bot",
+          "body": "Iris Bot is not active yet. Add Iris Bot to this group and make it admin first.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778434820605
         }
       ],
       "readBy": {
-        "user_1778419429267_01635a2d0b13": 1778421829018,
-        "user_1777740146651_e496c9a55621": 1778421835728
+        "user_1778419429267_01635a2d0b13": 1778433548195,
+        "user_1777740146651_e496c9a55621": 1778502917989
       },
-      "createdAt": 1778419444569
+      "createdAt": 1778419444569,
+      "moderation": {
+        "rules": "",
+        "bannedUserIds": [],
+        "mutedUntil": {},
+        "warnings": {}
+      }
     },
     {
       "id": "chat_1778420508404_4cf4f2702640",
@@ -431,10 +574,278 @@
         }
       ],
       "readBy": {
-        "user_1777740146651_e496c9a55621": 1778421674906,
+        "user_1777740146651_e496c9a55621": 1778433716512,
         "user_1778419429267_01635a2d0b13": 1778420530190
       },
-      "createdAt": 1778420508404
+      "createdAt": 1778420508404,
+      "moderation": {
+        "rules": "",
+        "bannedUserIds": [],
+        "mutedUntil": {},
+        "warnings": {}
+      }
+    },
+    {
+      "id": "chat_1778434565133_5a2d3199e1d6",
+      "name": "",
+      "direct": true,
+      "creatorId": "user_1777740146651_e496c9a55621",
+      "admins": [],
+      "members": [
+        "user_1777740146651_e496c9a55621",
+        "user_iris_bot"
+      ],
+      "messages": [
+        {
+          "id": "message_1778434571075_ad2a6adaa529",
+          "authorId": "user_1777740146651_e496c9a55621",
+          "body": "/help",
+          "replyTo": "",
+          "reactions": {},
+          "createdAt": 1778434571075,
+          "system": false
+        }
+      ],
+      "readBy": {
+        "user_1777740146651_e496c9a55621": 1778434631207
+      },
+      "createdAt": 1778434565133,
+      "moderation": {
+        "rules": "",
+        "bannedUserIds": [],
+        "mutedUntil": {},
+        "warnings": {}
+      }
+    },
+    {
+      "id": "chat_1778434875544_1c7c768de876",
+      "name": "Closebook official",
+      "direct": false,
+      "creatorId": "user_1777740146651_e496c9a55621",
+      "admins": [
+        "user_1777740146651_e496c9a55621",
+        "user_iris_bot"
+      ],
+      "members": [
+        "user_1777740146651_e496c9a55621",
+        "user_iris_bot",
+        "user_1778419429267_01635a2d0b13",
+        "user_1777740166287_9fa412a01a62"
+      ],
+      "messages": [
+        {
+          "id": "message_1778434882481_eb2859503cef",
+          "authorId": "system",
+          "body": "Siddharth made irisbot an admin.",
+          "replyTo": "",
+          "reactions": {},
+          "system": true,
+          "createdAt": 1778434882481
+        },
+        {
+          "id": "message_1778434926139_0086e67cbc0b",
+          "authorId": "user_iris_bot",
+          "body": "@demo has been banned and removed from the group.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778434926139
+        },
+        {
+          "id": "message_1778434945751_fc27796ab4c6",
+          "authorId": "user_1778419429267_01635a2d0b13",
+          "body": "hi",
+          "replyTo": "",
+          "reactions": {},
+          "createdAt": 1778434945751,
+          "system": false
+        },
+        {
+          "id": "message_1778434954811_40b03da955b1",
+          "authorId": "user_iris_bot",
+          "body": "@shivu123 has been banned and removed from the group.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778434954811
+        },
+        {
+          "id": "message_1778434985231_d8c1d1cbdb48",
+          "authorId": "user_iris_bot",
+          "body": "@shivu123 has been unbanned.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778434985231
+        },
+        {
+          "id": "message_1778435006757_d75bc9686300",
+          "authorId": "system",
+          "body": "Siddharth added shivu123.",
+          "replyTo": "",
+          "reactions": {},
+          "system": true,
+          "createdAt": 1778435006757
+        },
+        {
+          "id": "message_1778435016725_84b6aef2c32b",
+          "authorId": "user_1778419429267_01635a2d0b13",
+          "body": "hhello",
+          "replyTo": "",
+          "reactions": {},
+          "createdAt": 1778435016725,
+          "system": false
+        },
+        {
+          "id": "message_1778435032014_025a14dbc84b",
+          "authorId": "user_iris_bot",
+          "body": "Only group admins can use moderation commands.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435032014
+        },
+        {
+          "id": "message_1778435044756_855119b131f0",
+          "authorId": "user_iris_bot",
+          "body": "@shivu123 has been muted for 1 minute.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435044756
+        },
+        {
+          "id": "message_1778435117886_9d8421abbbed",
+          "authorId": "user_iris_bot",
+          "body": "@shivu123 has been warned (1/3).",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435117886
+        },
+        {
+          "id": "message_1778435127210_2f5fec670ba9",
+          "authorId": "user_1778419429267_01635a2d0b13",
+          "body": "hi",
+          "replyTo": "",
+          "reactions": {},
+          "createdAt": 1778435127211,
+          "system": false
+        },
+        {
+          "id": "message_1778435141687_2bb91981c15a",
+          "authorId": "user_iris_bot",
+          "body": "Only group admins can use moderation commands.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435141687
+        },
+        {
+          "id": "message_1778435156528_dff0a61f3ebb",
+          "authorId": "user_iris_bot",
+          "body": "@shivu123 has 1/3 warnings.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435156528
+        },
+        {
+          "id": "message_1778435211195_a00c82160b57",
+          "authorId": "user_iris_bot",
+          "body": "Iris commands: /set rules <rules>, /rules, /ban @user, /unban @user, /kick @user, /mute @user <minutes>, /warn @user, /warnings @user, /help.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435211195
+        },
+        {
+          "id": "message_1778435221773_00daabc28b56",
+          "authorId": "user_iris_bot",
+          "body": "Use: /set rules <rules>. Rules can be multiple lines.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435221773
+        },
+        {
+          "id": "message_1778435236464_4f1e3499150c",
+          "authorId": "user_iris_bot",
+          "body": "Group rules updated:\nDo not Rush",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435236464
+        },
+        {
+          "id": "message_1778435241079_a8a8db6cb74a",
+          "authorId": "user_iris_bot",
+          "body": "Group rules:\nDo not Rush",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435241079
+        },
+        {
+          "id": "message_1778435269495_e207b85c1824",
+          "authorId": "user_iris_bot",
+          "body": "@demo has been unbanned.",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435269495
+        },
+        {
+          "id": "message_1778435276727_900cd5e681b7",
+          "authorId": "system",
+          "body": "Siddharth added demo.",
+          "replyTo": "",
+          "reactions": {},
+          "system": true,
+          "createdAt": 1778435276727
+        },
+        {
+          "id": "message_1778435276727_a6fb20af7b06",
+          "authorId": "user_iris_bot",
+          "body": "Welcome @demo. Group rules:\nDo not Rush",
+          "replyTo": "",
+          "reactions": {},
+          "system": false,
+          "createdAt": 1778435276727
+        },
+        {
+          "id": "message_1778435838373_6c99092c94a6",
+          "authorId": "user_1777740146651_e496c9a55621",
+          "body": "hello folks",
+          "replyTo": "",
+          "reactions": {},
+          "createdAt": 1778435838373,
+          "system": false
+        },
+        {
+          "id": "message_1778506160097_b98f041af434",
+          "authorId": "user_1777740146651_e496c9a55621",
+          "body": "hello nate",
+          "replyTo": "",
+          "reactions": {},
+          "createdAt": 1778506160097,
+          "system": false
+        }
+      ],
+      "readBy": {
+        "user_1777740146651_e496c9a55621": 1778506160098,
+        "user_1778419429267_01635a2d0b13": 1778435127211
+      },
+      "createdAt": 1778434875544,
+      "moderation": {
+        "rules": "Do not Rush",
+        "bannedUserIds": [],
+        "mutedUntil": {},
+        "warnings": {
+          "user_1778419429267_01635a2d0b13": 1,
+          "user_1777740166287_9fa412a01a62": 0
+        }
+      }
     }
   ],
   "notifications": [
@@ -560,24 +971,1185 @@
       "messageId": "message_1778421388105_0a2cc079d1ba"
     },
     {
-      "id": "notification_1778421438798_179850891426",
-      "read": true,
-      "createdAt": 1778421438798,
-      "userId": "user_1777740146651_e496c9a55621",
-      "actorId": "user_1778419429267_01635a2d0b13",
-      "type": "post-mention",
-      "text": "shivu123 mentioned you in a post.",
-      "postId": "post_1778421438797_6708fd697394"
+      "id": "notification_1778434583884_248da8ed6420",
+      "read": false,
+      "createdAt": 1778434583884,
+      "userId": "user_iris_bot",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "follow",
+      "text": "Siddharth started following you."
     },
     {
-      "id": "notification_1778421455375_b169cf985229",
+      "id": "notification_1778435867124_ece2df6362fa",
       "read": false,
-      "createdAt": 1778421455375,
+      "createdAt": 1778435867124,
       "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778436112315_03bb3e012079",
+      "read": false,
+      "createdAt": 1778436112315,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth decreased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778436136627_6dd1bfcb426e",
+      "read": false,
+      "createdAt": 1778436136627,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "admin",
+      "type": "karma",
+      "text": "Closebook Admin increased your karma by 99."
+    },
+    {
+      "id": "notification_1778436159244_223918e71624",
+      "read": false,
+      "createdAt": 1778436159244,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "admin",
+      "type": "karma",
+      "text": "Closebook Admin decreased your karma by 99."
+    },
+    {
+      "id": "notification_1778436163251_a8df57f5b103",
+      "read": false,
+      "createdAt": 1778436163251,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "admin",
+      "type": "karma",
+      "text": "Closebook Admin decreased your karma by 99."
+    },
+    {
+      "id": "notification_1778502864203_fe7b886e9fb3",
+      "read": false,
+      "createdAt": 1778502864203,
+      "userId": "user_1777740166287_9fa412a01a62",
       "actorId": "user_1777740146651_e496c9a55621",
       "type": "like",
       "text": "Siddharth hearted your post.",
-      "postId": "post_1778421438797_6708fd697394"
+      "postId": "post_1777740997112_d54b8038a097"
+    },
+    {
+      "id": "notification_1778502881635_b20685329138",
+      "read": false,
+      "createdAt": 1778502881635,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778502889850_c4e92c278755",
+      "read": false,
+      "createdAt": 1778502889850,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778502892841_4d69a075a0dd",
+      "read": false,
+      "createdAt": 1778502892841,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778502896038_ddf94e775591",
+      "read": false,
+      "createdAt": 1778502896038,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778502899250_f728cd9de2bc",
+      "read": false,
+      "createdAt": 1778502899250,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778503111499_0cd10c111457",
+      "read": false,
+      "createdAt": 1778503111499,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "comment",
+      "text": "Siddharth commented on your post.",
+      "postId": "post_1777740997112_d54b8038a097"
+    },
+    {
+      "id": "notification_1778504493676_aa80a737722f",
+      "read": false,
+      "createdAt": 1778504493676,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504495521_56bfeb7c472b",
+      "read": false,
+      "createdAt": 1778504495522,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504497608_cdc086184df3",
+      "read": false,
+      "createdAt": 1778504497608,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504499433_addbf26d696d",
+      "read": false,
+      "createdAt": 1778504499433,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504501858_e58faf3c1bd4",
+      "read": false,
+      "createdAt": 1778504501858,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504505084_379ef6d0e419",
+      "read": false,
+      "createdAt": 1778504505084,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504507520_10a575147b2d",
+      "read": false,
+      "createdAt": 1778504507520,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504510215_5d426ba4f876",
+      "read": false,
+      "createdAt": 1778504510215,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504512373_93a2066cf401",
+      "read": false,
+      "createdAt": 1778504512373,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504514870_4c750c609497",
+      "read": false,
+      "createdAt": 1778504514870,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504516987_4441bcf747c8",
+      "read": false,
+      "createdAt": 1778504516987,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504519254_8e9f9b2c9c04",
+      "read": false,
+      "createdAt": 1778504519254,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504521008_2c4f49d92da4",
+      "read": false,
+      "createdAt": 1778504521008,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504522671_d995dafc01a2",
+      "read": false,
+      "createdAt": 1778504522671,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504524665_427852401757",
+      "read": false,
+      "createdAt": 1778504524665,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504526311_ec60db0f38c5",
+      "read": false,
+      "createdAt": 1778504526311,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504529616_1311d9b84c9f",
+      "read": false,
+      "createdAt": 1778504529616,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504532289_f92ec954ff97",
+      "read": false,
+      "createdAt": 1778504532289,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504533759_2ebc773a174f",
+      "read": false,
+      "createdAt": 1778504533759,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504535366_f53fc5a21c57",
+      "read": false,
+      "createdAt": 1778504535366,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504537905_597187081e57",
+      "read": false,
+      "createdAt": 1778504537905,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth increased your karma by 10 as a moderator."
+    },
+    {
+      "id": "notification_1778504615139_9c262b937636",
+      "read": false,
+      "createdAt": 1778504615139,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504617606_da02a33794a0",
+      "read": false,
+      "createdAt": 1778504617606,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504854509_3d97478867f7",
+      "read": false,
+      "createdAt": 1778504854509,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504858195_286daa404d75",
+      "read": false,
+      "createdAt": 1778504858195,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504859833_4dead3df9e3b",
+      "read": false,
+      "createdAt": 1778504859833,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504861275_da839fce98df",
+      "read": false,
+      "createdAt": 1778504861275,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504862406_988249b425f1",
+      "read": false,
+      "createdAt": 1778504862406,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504862978_93f9e6572eb9",
+      "read": false,
+      "createdAt": 1778504862978,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504863418_2dba357df6be",
+      "read": false,
+      "createdAt": 1778504863418,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504863939_8b4bfbf041cf",
+      "read": false,
+      "createdAt": 1778504863939,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504864441_c30928a47f55",
+      "read": false,
+      "createdAt": 1778504864441,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504864854_572e5847a89a",
+      "read": false,
+      "createdAt": 1778504864854,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504865269_44e992ceca06",
+      "read": false,
+      "createdAt": 1778504865269,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504865548_6f31595bb72a",
+      "read": false,
+      "createdAt": 1778504865548,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504865874_07a1d6e3161f",
+      "read": false,
+      "createdAt": 1778504865874,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504866282_0fbdf53d6b4f",
+      "read": false,
+      "createdAt": 1778504866282,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504866472_d0c5fb408c6a",
+      "read": false,
+      "createdAt": 1778504866472,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth lowered your karma."
+    },
+    {
+      "id": "notification_1778504867118_170fbd88f420",
+      "read": false,
+      "createdAt": 1778504867118,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504867312_42f6e18b0be1",
+      "read": false,
+      "createdAt": 1778504867312,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504867508_70bdcc1d7503",
+      "read": false,
+      "createdAt": 1778504867508,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504867702_b66dea38afc2",
+      "read": false,
+      "createdAt": 1778504867702,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504867901_8b0210faedf2",
+      "read": false,
+      "createdAt": 1778504867901,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504868074_82d8f482495c",
+      "read": false,
+      "createdAt": 1778504868074,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504868477_deccf5cf9482",
+      "read": false,
+      "createdAt": 1778504868477,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504868875_518e2ab5fe56",
+      "read": false,
+      "createdAt": 1778504868875,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504869276_2dc98bf75111",
+      "read": false,
+      "createdAt": 1778504869276,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504869678_4d644f74e229",
+      "read": false,
+      "createdAt": 1778504869678,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504869867_e8a3fa46bf2c",
+      "read": false,
+      "createdAt": 1778504869867,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504870066_27ec51b08d93",
+      "read": false,
+      "createdAt": 1778504870067,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504870259_b9462048ba91",
+      "read": false,
+      "createdAt": 1778504870259,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504870454_7c2911f2b2b1",
+      "read": false,
+      "createdAt": 1778504870454,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504871214_96e6670459fc",
+      "read": false,
+      "createdAt": 1778504871214,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504871817_eebbb6c1169d",
+      "read": false,
+      "createdAt": 1778504871817,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504872584_dba9060f4de2",
+      "read": false,
+      "createdAt": 1778504872584,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504873009_318ec6811d9d",
+      "read": false,
+      "createdAt": 1778504873009,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504873440_7be6da03042a",
+      "read": false,
+      "createdAt": 1778504873440,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504874360_fd4433e5ac88",
+      "read": false,
+      "createdAt": 1778504874360,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778504910375_6112cb4e222e",
+      "read": false,
+      "createdAt": 1778504910375,
+      "userId": "user_1777740146651_e496c9a55621",
+      "actorId": "user_1777740166287_9fa412a01a62",
+      "type": "karma",
+      "text": "demo raised your karma."
+    },
+    {
+      "id": "notification_1778505153983_8bf7854146b2",
+      "read": false,
+      "createdAt": 1778505153983,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "follow",
+      "text": "Siddharth started following you."
+    },
+    {
+      "id": "notification_1778505155874_65ee738f6de4",
+      "read": false,
+      "createdAt": 1778505155874,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "follow",
+      "text": "Siddharth started following you."
+    },
+    {
+      "id": "notification_1778505491433_a6af87734f17",
+      "read": false,
+      "createdAt": 1778505491433,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1777740166287_9fa412a01a62",
+      "type": "follow",
+      "text": "demo started following you."
+    },
+    {
+      "id": "notification_1778505508528_f7d4a6fc3cd3",
+      "read": false,
+      "createdAt": 1778505508528,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "follow",
+      "text": "Siddharth started following you."
+    },
+    {
+      "id": "notification_1778505509894_eae9bfcec990",
+      "read": false,
+      "createdAt": 1778505509894,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "follow",
+      "text": "Siddharth started following you."
+    },
+    {
+      "id": "notification_1778505521814_4cea89e2bcd5",
+      "read": false,
+      "createdAt": 1778505521814,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505522485_769bae1c00e0",
+      "read": false,
+      "createdAt": 1778505522485,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505522890_a7f73c91102b",
+      "read": false,
+      "createdAt": 1778505522890,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505523307_910404d11571",
+      "read": false,
+      "createdAt": 1778505523307,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505523732_a51d5a0154a2",
+      "read": false,
+      "createdAt": 1778505523732,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505524166_1104c9c4476a",
+      "read": false,
+      "createdAt": 1778505524166,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505524539_ff22e467f825",
+      "read": false,
+      "createdAt": 1778505524539,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505524954_fa5ecd8f62c8",
+      "read": false,
+      "createdAt": 1778505524954,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505525383_f3d0f234a612",
+      "read": false,
+      "createdAt": 1778505525383,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505525805_b00352f2712e",
+      "read": false,
+      "createdAt": 1778505525805,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505526207_cd8ebd966d8a",
+      "read": false,
+      "createdAt": 1778505526207,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505526401_ba9c3fcc010c",
+      "read": false,
+      "createdAt": 1778505526401,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505526798_4c5063eb6d69",
+      "read": false,
+      "createdAt": 1778505526798,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505527206_bb066ecd6d36",
+      "read": false,
+      "createdAt": 1778505527206,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505527392_e7f8094d41ee",
+      "read": false,
+      "createdAt": 1778505527392,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505527590_a852b149b46f",
+      "read": false,
+      "createdAt": 1778505527590,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505527784_8c655ad0755c",
+      "read": false,
+      "createdAt": 1778505527784,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505527958_859a2951c745",
+      "read": false,
+      "createdAt": 1778505527958,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505528153_100470b75182",
+      "read": false,
+      "createdAt": 1778505528153,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505528542_3af98dd4fd0c",
+      "read": false,
+      "createdAt": 1778505528542,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505528936_1a8403af287e",
+      "read": false,
+      "createdAt": 1778505528936,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505529125_1441a5526791",
+      "read": false,
+      "createdAt": 1778505529125,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505529302_cd87d3a11d43",
+      "read": false,
+      "createdAt": 1778505529302,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505529493_a9f35267fbd8",
+      "read": false,
+      "createdAt": 1778505529493,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505529685_2a3e2bd96651",
+      "read": false,
+      "createdAt": 1778505529685,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505529858_f15ea295f8dc",
+      "read": false,
+      "createdAt": 1778505529858,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505530050_09fced128b6c",
+      "read": false,
+      "createdAt": 1778505530050,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505530222_ee650d646672",
+      "read": false,
+      "createdAt": 1778505530222,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505530417_83de9b890179",
+      "read": false,
+      "createdAt": 1778505530417,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505530581_a49f6e10665c",
+      "read": false,
+      "createdAt": 1778505530581,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505530771_8f045a4b2f8e",
+      "read": false,
+      "createdAt": 1778505530771,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505530965_19fbe34c566c",
+      "read": false,
+      "createdAt": 1778505530965,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505531144_b33f73101571",
+      "read": false,
+      "createdAt": 1778505531144,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505531337_d76e1dc0957a",
+      "read": false,
+      "createdAt": 1778505531337,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505531529_057424e282f2",
+      "read": false,
+      "createdAt": 1778505531529,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505531704_b35394b43756",
+      "read": false,
+      "createdAt": 1778505531704,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505532087_e0b0c589abe8",
+      "read": false,
+      "createdAt": 1778505532087,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505532485_62acfe4e0553",
+      "read": false,
+      "createdAt": 1778505532485,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505532896_0a62acc97703",
+      "read": false,
+      "createdAt": 1778505532896,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505533300_53fb06c084de",
+      "read": false,
+      "createdAt": 1778505533300,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505533730_6472765d7f77",
+      "read": false,
+      "createdAt": 1778505533730,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505534141_9660c3efa5be",
+      "read": false,
+      "createdAt": 1778505534141,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505534565_05ca11ad0b17",
+      "read": false,
+      "createdAt": 1778505534566,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505534758_a63045daead4",
+      "read": false,
+      "createdAt": 1778505534758,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505535218_91a25a0d7e12",
+      "read": false,
+      "createdAt": 1778505535218,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505535651_466db042d62a",
+      "read": false,
+      "createdAt": 1778505535651,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505536066_997c1f04165b",
+      "read": false,
+      "createdAt": 1778505536067,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505537214_b702b9d082b0",
+      "read": false,
+      "createdAt": 1778505537214,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778505537404_64337a334d39",
+      "read": false,
+      "createdAt": 1778505537404,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1777740146651_e496c9a55621",
+      "type": "karma",
+      "text": "Siddharth raised your karma."
+    },
+    {
+      "id": "notification_1778507926905_b9c5cbd6e5b6",
+      "read": false,
+      "createdAt": 1778507926905,
+      "userId": "user_1777740146651_e496c9a55621",
+      "actorId": "user_1778507892148_16b62c154fdc",
+      "type": "karma",
+      "text": "anonov lowered your karma."
+    },
+    {
+      "id": "notification_1778507929295_407cf9c763f4",
+      "read": false,
+      "createdAt": 1778507929295,
+      "userId": "user_1777740146651_e496c9a55621",
+      "actorId": "user_1778507892148_16b62c154fdc",
+      "type": "follow",
+      "text": "anonov started following you."
+    },
+    {
+      "id": "notification_1778507930993_6b29f36bb1b2",
+      "read": false,
+      "createdAt": 1778507930993,
+      "userId": "user_1777740166287_9fa412a01a62",
+      "actorId": "user_1778507892148_16b62c154fdc",
+      "type": "follow",
+      "text": "anonov started following you."
+    },
+    {
+      "id": "notification_1778507932108_b25116f2b2f1",
+      "read": false,
+      "createdAt": 1778507932108,
+      "userId": "user_1778419429267_01635a2d0b13",
+      "actorId": "user_1778507892148_16b62c154fdc",
+      "type": "follow",
+      "text": "anonov started following you."
+    },
+    {
+      "id": "notification_1778507933236_f40c9e445074",
+      "read": false,
+      "createdAt": 1778507933236,
+      "userId": "user_iris_bot",
+      "actorId": "user_1778507892148_16b62c154fdc",
+      "type": "follow",
+      "text": "anonov started following you."
     }
   ],
   "sessions": [
@@ -590,12 +2162,27 @@
       "token": "b736b435dd55624515cf5dcd4a9c3616e51adbb89afb5513bca9d9011781f40c",
       "userId": "user_1778419429267_01635a2d0b13",
       "createdAt": 1778419429268
+    },
+    {
+      "token": "55e2444dc84496c9752f3b6183ff8e76b45eb71edab63a3b6dd21511eccd572a",
+      "userId": "user_1777740166287_9fa412a01a62",
+      "createdAt": 1778504902185
+    },
+    {
+      "token": "235fd6ac97df94ccbe350fcffb112c173b5ff0aceaf2f38819c0030c33cc947d",
+      "userId": "user_1778507892148_16b62c154fdc",
+      "createdAt": 1778507892148
     }
   ],
   "adminSessions": [
     {
       "token": "61b6563519a5809f55ea72692d79d9c41fdc4f32f322abd04267349c2f00afb4",
       "createdAt": 1777741689376,
+      "ip": "::1"
+    },
+    {
+      "token": "c6aae3112e3191c2dfc785a13fa41f53349ba181013a5615839a571413c9e2b3",
+      "createdAt": 1778502805849,
       "ip": "::1"
     }
   ],
