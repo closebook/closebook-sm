@@ -12,6 +12,7 @@ let state = {
   activeView: savedActiveView,
   activeChatId: savedActiveView === "chats" ? localStorage.getItem(ACTIVE_CHAT_KEY) || null : null,
   viewedProfileId: localStorage.getItem("closial-view-profile") || null,
+  previewPostId: null,
 };
 
 const authScreen = document.querySelector("#auth-screen");
@@ -31,6 +32,7 @@ const postMentionSuggestions = document.querySelector("#post-mention-suggestions
 const imageInput = document.querySelector("#image-input");
 const imagePreview = document.querySelector("#image-preview");
 const postsList = document.querySelector("#posts-list");
+const tagFilterBar = document.querySelector("#tag-filter-bar");
 const peopleList = document.querySelector("#people-list");
 const peopleSearch = document.querySelector("#people-search");
 const currentUserName = document.querySelector("#current-user-name");
@@ -51,6 +53,11 @@ const chatSearch = document.querySelector("#chat-search");
 const groupModal = document.querySelector("#group-modal");
 const openGroupModal = document.querySelector("#open-group-modal");
 const closeGroupModal = document.querySelector("#close-group-modal");
+const postModal = document.querySelector("#post-modal");
+const closePostModal = document.querySelector("#close-post-modal");
+const postModalContent = document.querySelector("#post-modal-content");
+const connectionsModal = document.querySelector("#connections-modal");
+const connectionsModalContent = document.querySelector("#connections-modal-content");
 const chatList = document.querySelector("#chat-list");
 const messagesList = document.querySelector("#messages-list");
 const messageForm = document.querySelector("#message-form");
@@ -72,8 +79,10 @@ let liveSource = null;
 let refreshTimer = null;
 let peopleQuery = "";
 let feedFilter = "all";
+let activeTag = "";
 let replyToMessageId = "";
 let profileTab = "posts";
+let profileConnectionMode = "";
 let chatQuery = "";
 const MESSAGE_REACTIONS = ["👍", "❤️", "😂", "🔥"];
 
@@ -138,12 +147,56 @@ function formatTime(value) {
 }
 
 function karmaRank(karma) {
-  if (karma >= 100) return "God Level";
-  if (karma >= 50) return "Hero";
-  if (karma >= 15) return "Trusted";
-  if (karma > -15) return "Neutral";
-  if (karma > -50) return "Troublemaker";
-  return "Villain Level";
+  const positiveRanks = [
+    "Rookie Flame",
+    "Street Saint",
+    "Clutch Dealer",
+    "Aura Holder",
+    "Respect Magnet",
+    "Crowd Favorite",
+    "Elite Operator",
+    "Certified Icon",
+    "Main Character",
+    "Untouchable",
+    "Legacy Maker",
+    "Crown Bearer",
+    "Myth Walker",
+    "Hall of Famer",
+    "Reality Bender",
+    "Heaven Sent",
+    "Divine Menace",
+    "Immortal Flex",
+    "Final Boss Hero",
+    "Cosmic Emperor",
+    "GOD",
+  ];
+  const negativeRanks = [
+    "Side Eye",
+    "Walking L",
+    "Drama Merchant",
+    "Certified Menace",
+    "Chaos Intern",
+    "Ratio Magnet",
+    "Public Problem",
+    "Toxic Specialist",
+    "Reputation Reaper",
+    "Blacklist Energy",
+    "Nightmare Fuel",
+    "Disaster Artist",
+    "Dark Influence",
+    "Villain Arc",
+    "Chaos Commander",
+    "Abyss Regular",
+    "Doom Dealer",
+    "Evil CEO",
+    "Final Boss Menace",
+    "World Class Threat",
+    "Villain",
+  ];
+
+  if (karma >= 50) return positiveRanks[Math.min(Math.floor(karma / 50) - 1, positiveRanks.length - 1)];
+  if (karma <= -50) return negativeRanks[Math.min(Math.floor(Math.abs(karma) / 50) - 1, negativeRanks.length - 1)];
+  return "Neutral";
 }
 
 function initials(name) {
@@ -257,6 +310,20 @@ document.querySelectorAll(".nav-link").forEach((button) => {
 });
 
 document.addEventListener("click", (event) => {
+  const tagTrigger = event.target.closest("[data-tag-filter]");
+  if (tagTrigger) {
+    event.preventDefault();
+    showTaggedPosts(tagTrigger.dataset.tagFilter);
+    return;
+  }
+
+  const clearTagTrigger = event.target.closest("[data-clear-tag-filter]");
+  if (clearTagTrigger) {
+    event.preventDefault();
+    clearTaggedPosts();
+    return;
+  }
+
   const mentionTrigger = event.target.closest("[data-mention-user]");
   if (mentionTrigger) {
     event.preventDefault();
@@ -281,9 +348,11 @@ document.addEventListener("click", (event) => {
 document.querySelectorAll(".feed-tab").forEach((button) => {
   button.addEventListener("click", () => {
     feedFilter = button.dataset.feedFilter;
+    activeTag = "";
     document.querySelectorAll(".feed-tab").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
     renderPosts();
+    renderTagFilterBar();
   });
 });
 
@@ -307,6 +376,20 @@ closeGroupModal.addEventListener("click", closeGroupCreator);
 
 groupModal.addEventListener("click", (event) => {
   if (event.target === groupModal) closeGroupCreator();
+});
+
+closePostModal.addEventListener("click", closePostPreview);
+
+postModal.addEventListener("click", async (event) => {
+  if (event.target === postModal) {
+    closePostPreview();
+    return;
+  }
+
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  await handlePostAction(button, postModalContent);
+  if (state.previewPostId) renderPostPreview(state.previewPostId);
 });
 
 peopleSearch.addEventListener("input", () => {
@@ -394,10 +477,14 @@ postsList.addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
 
+  await handlePostAction(button, postsList);
+});
+
+async function handlePostAction(button, root) {
   if (button.dataset.action === "report") {
     await submitReport("post", button.dataset.postId, "Report this post");
   } else if (button.dataset.action === "comment") {
-    const input = postsList.querySelector(`input[data-comment-input="${button.dataset.postId}"]`);
+    const input = root.querySelector(`input[data-comment-input="${button.dataset.postId}"]`);
     const body = input?.value.trim();
     if (!body) return;
     await api(`/api/posts/${button.dataset.postId}/comments`, {
@@ -417,7 +504,7 @@ postsList.addEventListener("click", async (event) => {
   }
 
   await refreshSocial();
-});
+}
 
 peopleList.addEventListener("click", async (event) => {
   const modKarmaButton = event.target.closest("button[data-mod-karma]");
@@ -451,6 +538,18 @@ peopleList.addEventListener("click", async (event) => {
 });
 
 profileCard.addEventListener("click", async (event) => {
+  const connectionButton = event.target.closest("button[data-profile-list]");
+  if (connectionButton) {
+    openConnectionsModal(connectionButton.dataset.profileList);
+    return;
+  }
+
+  const previewButton = event.target.closest("button[data-post-preview]");
+  if (previewButton) {
+    openPostPreview(previewButton.dataset.postPreview);
+    return;
+  }
+
   const tabButton = event.target.closest("button[data-profile-tab]");
   if (tabButton) {
     profileTab = tabButton.dataset.profileTab;
@@ -490,6 +589,27 @@ profileCard.addEventListener("click", async (event) => {
   const reportButton = event.target.closest("button[data-report-user]");
   if (reportButton) {
     await submitReport("user", reportButton.dataset.reportUser, "Report this user");
+  }
+});
+
+connectionsModal.addEventListener("click", async (event) => {
+  if (event.target === connectionsModal || event.target.closest("[data-close-connections]")) {
+    closeConnectionsModal();
+    return;
+  }
+
+  const followButton = event.target.closest("button[data-follow-user]");
+  if (followButton) {
+    await api(`/api/users/${followButton.dataset.followUser}/follow`, { method: "POST" });
+    await refreshSocial();
+    renderOpenConnectionsModal();
+    return;
+  }
+
+  const messageButton = event.target.closest("button[data-message-user]");
+  if (messageButton) {
+    closeConnectionsModal();
+    await startDirectMessage(messageButton.dataset.messageUser);
   }
 });
 
@@ -799,6 +919,7 @@ function render() {
 
   renderHeader();
   renderStories();
+  renderTagFilterBar();
   renderPosts();
   renderPeople();
   renderKarmaBoard();
@@ -807,6 +928,8 @@ function render() {
   renderMessages();
   renderNotifications();
   renderProfile();
+  if (state.previewPostId) renderPostPreview(state.previewPostId);
+  renderOpenConnectionsModal();
   showView(state.activeView || "feed", { preserveChat: true });
 }
 
@@ -830,6 +953,7 @@ function navigateToProfile(userId) {
   if (!userById(userId)) return;
   state.viewedProfileId = userId;
   profileTab = "posts";
+  profileConnectionMode = "";
   localStorage.setItem("closial-view-profile", userId);
   showView("profile");
   renderProfile();
@@ -839,7 +963,7 @@ function renderHeader() {
   const unreadNotifications = state.notifications.filter((item) => !item.read).length;
   const unreadMessages = state.chats.reduce((total, chat) => total + unreadChatCount(chat), 0);
 
-  currentUserName.innerHTML = `${escapeHtml(state.currentUser.fullName)}${modBadge(state.currentUser)}`;
+  currentUserName.textContent = state.currentUser.fullName;
   currentUserName.dataset.profileId = state.currentUser.id;
   railUsername.innerHTML = `@${escapeHtml(state.currentUser.username)}${modBadge(state.currentUser)}`;
   railUsername.dataset.profileId = state.currentUser.id;
@@ -876,11 +1000,32 @@ function renderStories() {
     .join("");
 }
 
+function renderTagFilterBar() {
+  if (!tagFilterBar) return;
+
+  if (!activeTag) {
+    tagFilterBar.classList.add("hidden");
+    tagFilterBar.innerHTML = "";
+    return;
+  }
+
+  const count = state.posts.filter((post) => postHasTag(post, activeTag)).length;
+  tagFilterBar.innerHTML = `
+    <div>
+      <span>Tagged posts</span>
+      <strong>#${escapeHtml(activeTag)}</strong>
+      <small>${count} ${count === 1 ? "post" : "posts"}</small>
+    </div>
+    <button class="chip-btn" data-clear-tag-filter type="button">Show all</button>
+  `;
+  tagFilterBar.classList.remove("hidden");
+}
+
 function renderPosts() {
   const posts = filteredPosts();
 
   if (!posts.length) {
-    postsList.innerHTML = emptyState("No posts yet. Start the feed.");
+    postsList.innerHTML = emptyState(activeTag ? `No posts found for #${activeTag}.` : "No posts yet. Start the feed.");
     return;
   }
 
@@ -893,7 +1038,7 @@ function renderPosts() {
       const saved = state.currentUser.savedPosts.includes(post.id);
       const previewComments = post.comments.slice(-3);
       const mine = post.authorId === state.currentUser.id;
-      const tags = post.body.match(/#[a-z0-9_]+/gi) || [];
+      const tags = extractTags(post.body);
 
       return `
         <article class="post-card">
@@ -917,7 +1062,7 @@ function renderPosts() {
             tags.length
               ? `<div class="post-tags">${tags
                   .slice(0, 4)
-                  .map((tag) => `<span>${escapeHtml(tag.toLowerCase())}</span>`)
+                  .map((tag) => tagButton(tag))
                   .join("")}</div>`
               : ""
           }
@@ -997,8 +1142,7 @@ function renderRightRail() {
 
   const tags = new Map();
   state.posts.forEach((post) => {
-    const foundTags = post.body.match(/#[a-z0-9_]+/gi) || [];
-    foundTags.forEach((tag) => tags.set(tag.toLowerCase(), (tags.get(tag.toLowerCase()) || 0) + 1));
+    extractTags(post.body).forEach((tag) => tags.set(tag, (tags.get(tag) || 0) + 1));
   });
 
   const trending = Array.from(tags.entries())
@@ -1010,7 +1154,7 @@ function renderRightRail() {
         .map(
           ([tag, count]) => `
             <div class="trend-row">
-              <span>${escapeHtml(tag)}</span>
+              ${tagButton(tag)}
               <strong>${count} ${count === 1 ? "post" : "posts"}</strong>
             </div>
           `,
@@ -1046,6 +1190,10 @@ function renderRightRail() {
 }
 
 function filteredPosts() {
+  if (activeTag) {
+    return state.posts.filter((post) => postHasTag(post, activeTag));
+  }
+
   if (feedFilter === "following") {
     return state.posts.filter((post) => state.currentUser.following.includes(post.authorId));
   }
@@ -1072,6 +1220,8 @@ function renderPeople() {
   peopleList.innerHTML = others
     .map((user) => {
       const currentVote = state.currentUser.votedUsers[user.id] || 0;
+      const cooldown = karmaCooldownRemaining(user.id);
+      const cooldownLabel = cooldown ? formatCooldown(cooldown) : "";
       const following = state.currentUser.following.includes(user.id);
       return `
         <article class="person-card">
@@ -1080,7 +1230,7 @@ function renderPeople() {
               <div class="avatar">${initials(user.fullName)}</div>
               <div>
                 <strong>${escapeHtml(user.fullName)}</strong>
-                <span>@${escapeHtml(user.username)}${modBadge(user)} - age ${user.age}</span>
+                <span>@${escapeHtml(user.username)}${modBadge(user)} - ${karmaRank(user.karma)}</span>
               </div>
             </button>
             <div class="karma-title">${user.karma} - ${karmaRank(user.karma)}</div>
@@ -1090,14 +1240,15 @@ function renderPeople() {
             <button class="chip-btn ${following ? "active save-active" : ""}" data-follow-user="${user.id}" type="button">
               ${following ? "Following" : "Follow"}
             </button>
-            <button class="chip-btn ${currentVote === 1 ? "active" : ""}" data-karma="1" data-user-id="${user.id}" type="button">
+            <button class="chip-btn ${currentVote === 1 && cooldown ? "active" : ""}" data-karma="1" data-user-id="${user.id}" type="button" ${cooldown ? "disabled" : ""}>
               + Karma
             </button>
-            <button class="chip-btn danger ${currentVote === -1 ? "active" : ""}" data-karma="-1" data-user-id="${user.id}" type="button">
+            <button class="chip-btn danger ${currentVote === -1 && cooldown ? "active" : ""}" data-karma="-1" data-user-id="${user.id}" type="button" ${cooldown ? "disabled" : ""}>
               - Karma
             </button>
             <button class="chip-btn" data-report-user="${user.id}" type="button">Report</button>
           </div>
+          ${cooldownLabel ? `<p class="karma-cooldown">Karma available again in ${cooldownLabel}</p>` : ""}
           ${state.currentUser.isModerator ? moderatorKarmaControls(user.id) : ""}
         </article>
       `;
@@ -1255,22 +1406,19 @@ function renderProfile() {
   const profileUser = userById(state.viewedProfileId) || state.currentUser;
   const isOwnProfile = profileUser.id === state.currentUser.id;
   const userPosts = state.posts.filter((post) => post.authorId === profileUser.id);
-  const likes = state.posts.reduce(
-    (count, post) => count + (post.authorId === profileUser.id ? post.likes.length : 0),
-    0,
-  );
-  const chats = state.chats.filter((chat) => chat.members.includes(profileUser.id));
   const saved = state.posts.filter((post) => profileUser.savedPosts.includes(post.id));
   const likedPosts = state.posts.filter((post) => post.likes.includes(profileUser.id));
   const following = state.currentUser.following.includes(profileUser.id);
   const currentVote = state.currentUser.votedUsers[profileUser.id] || 0;
+  const cooldown = isOwnProfile ? 0 : karmaCooldownRemaining(profileUser.id);
+  const cooldownLabel = cooldown ? formatCooldown(cooldown) : "";
   const availableTabs = isOwnProfile ? ["posts", "saved", "liked"] : ["posts", "liked"];
   if (!availableTabs.includes(profileTab)) profileTab = "posts";
   const activeGridPosts = profileTab === "saved" ? saved : profileTab === "liked" ? likedPosts : userPosts;
   const gridPosts = activeGridPosts
     .map(
       (post) => `
-        <button class="profile-grid-item" type="button" title="${escapeAttribute(post.body.slice(0, 80))}">
+        <button class="profile-grid-item" data-post-preview="${post.id}" type="button" title="${escapeAttribute(post.body.slice(0, 80))}">
           ${
             post.imageData
               ? `<img src="${post.imageData}" alt="Profile post" />`
@@ -1290,7 +1438,7 @@ function renderProfile() {
       <div class="avatar">${initials(profileUser.fullName)}</div>
       <div>
         <h2>${escapeHtml(profileUser.fullName)}</h2>
-        <p class="profile-muted">@${escapeHtml(profileUser.username)}${modBadge(profileUser)} - ${profileUser.age} years old - ${escapeHtml(profileUser.email)}</p>
+        <p class="profile-muted">@${escapeHtml(profileUser.username)}${modBadge(profileUser)} - ${escapeHtml(karmaRank(profileUser.karma))}</p>
         ${profileUser.bio ? `<p class="profile-bio">${escapeHtml(profileUser.bio)}</p>` : ""}
         ${profileUser.website ? `<p class="profile-muted">${escapeHtml(profileUser.website)}</p>` : ""}
       </div>
@@ -1306,20 +1454,20 @@ function renderProfile() {
         : `<div class="profile-actions">
             <button class="chip-btn ${following ? "active save-active" : ""}" data-follow-user="${profileUser.id}" type="button">${following ? "Following" : "Follow"}</button>
             <button class="chip-btn" data-message-user="${profileUser.id}" type="button">Message</button>
-            <button class="chip-btn ${currentVote === 1 ? "active" : ""}" data-karma="1" data-user-id="${profileUser.id}" type="button">+ Karma</button>
-            <button class="chip-btn danger ${currentVote === -1 ? "active" : ""}" data-karma="-1" data-user-id="${profileUser.id}" type="button">- Karma</button>
+            <button class="chip-btn ${currentVote === 1 && cooldown ? "active" : ""}" data-karma="1" data-user-id="${profileUser.id}" type="button" ${cooldown ? "disabled" : ""}>+ Karma</button>
+            <button class="chip-btn danger ${currentVote === -1 && cooldown ? "active" : ""}" data-karma="-1" data-user-id="${profileUser.id}" type="button" ${cooldown ? "disabled" : ""}>- Karma</button>
             <button class="chip-btn" data-report-user="${profileUser.id}" type="button">Report</button>
           </div>`
     }
+    ${cooldownLabel ? `<p class="karma-cooldown">Karma available again in ${cooldownLabel}</p>` : ""}
     ${!isOwnProfile && state.currentUser.isModerator ? moderatorKarmaControls(profileUser.id) : ""}
     <div class="karma-title">${profileUser.karma} karma - ${karmaRank(profileUser.karma)}</div>
     <div class="stat-grid">
       <div class="stat-box"><strong>${userPosts.length}</strong><span class="profile-muted">Posts</span></div>
-      <div class="stat-box"><strong>${profileUser.followers.length}</strong><span class="profile-muted">Followers</span></div>
-      <div class="stat-box"><strong>${profileUser.following.length}</strong><span class="profile-muted">Following</span></div>
-      <div class="stat-box"><strong>${likes}</strong><span class="profile-muted">Likes received</span></div>
-      <div class="stat-box"><strong>${isOwnProfile ? saved.length : profileUser.karma}</strong><span class="profile-muted">${isOwnProfile ? "Saved" : "Karma"}</span></div>
-      <div class="stat-box"><strong>${chats.length}</strong><span class="profile-muted">Chats</span></div>
+      <button class="stat-box clickable ${profileConnectionMode === "followers" ? "active" : ""}" data-profile-list="followers" type="button"><strong>${profileUser.followers.length}</strong><span class="profile-muted">Followers</span></button>
+      <button class="stat-box clickable ${profileConnectionMode === "following" ? "active" : ""}" data-profile-list="following" type="button"><strong>${profileUser.following.length}</strong><span class="profile-muted">Following</span></button>
+      <div class="stat-box"><strong>${profileUser.karma}</strong><span class="profile-muted">Karma</span></div>
+      ${isOwnProfile ? `<div class="stat-box"><strong>${saved.length}</strong><span class="profile-muted">Saved</span></div>` : ""}
     </div>
     <div class="profile-tabs" aria-label="Profile post filters">
       ${availableTabs
@@ -1334,6 +1482,168 @@ function renderProfile() {
     </div>
     <h3 class="profile-section-title">${profileSectionTitle(profileTab, profileUser, isOwnProfile)}</h3>
     <div class="profile-grid">${gridPosts || `<p class="profile-muted">Your post grid is empty.</p>`}</div>
+  `;
+}
+
+function renderProfileConnections(profileUser, mode) {
+  const ids = mode === "followers" ? profileUser.followers : profileUser.following;
+  const people = ids.map((id) => userById(id)).filter(Boolean);
+  const title = mode === "followers" ? "Followers" : "Following";
+
+  if (!people.length) {
+    return `
+      <section class="connection-panel">
+        <div class="connection-head">
+          <div>
+            <span>${escapeHtml(profileUser.username)}</span>
+            <strong>${title}</strong>
+          </div>
+          <button class="icon-action ghost-icon" data-close-connections type="button" aria-label="Close ${title}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 4 14 14-2 2L4 6zm12 0 2 2L6 20l-2-2z"/></svg>
+          </button>
+        </div>
+        <p class="profile-muted">No ${mode} yet.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="connection-panel">
+      <div class="connection-head">
+        <div>
+          <span>${escapeHtml(profileUser.username)}</span>
+          <strong>${title}</strong>
+        </div>
+        <button class="icon-action ghost-icon" data-close-connections type="button" aria-label="Close ${title}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 4 14 14-2 2L4 6zm12 0 2 2L6 20l-2-2z"/></svg>
+        </button>
+      </div>
+      <div class="connection-list">
+        ${people
+          .map((user) => {
+            const isMe = user.id === state.currentUser.id;
+            const amFollowing = state.currentUser.following.includes(user.id);
+            return `
+              <article class="connection-card">
+                <button class="identity profile-link" data-profile-id="${user.id}" type="button">
+                  <div class="avatar">${initials(user.fullName)}</div>
+                  <span>
+                    <strong>${escapeHtml(user.fullName)}${modBadge(user)}</strong>
+                    <small>@${escapeHtml(user.username)} - ${escapeHtml(karmaRank(user.karma))}</small>
+                  </span>
+                </button>
+                <div class="connection-meta">
+                  <span>${user.karma} karma</span>
+                  <span>${user.followers.length} followers</span>
+                </div>
+                ${
+                  isMe
+                    ? `<button class="chip-btn" data-profile-id="${user.id}" type="button">You</button>`
+                    : `<div class="connection-actions">
+                        <button class="chip-btn ${amFollowing ? "active save-active" : ""}" data-follow-user="${user.id}" type="button">${amFollowing ? "Following" : "Follow"}</button>
+                        <button class="chip-btn" data-message-user="${user.id}" type="button">Message</button>
+                      </div>`
+                }
+              </article>
+            `;
+          })
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function openConnectionsModal(mode) {
+  profileConnectionMode = mode;
+  connectionsModal.classList.remove("hidden");
+  renderOpenConnectionsModal();
+}
+
+function closeConnectionsModal() {
+  profileConnectionMode = "";
+  connectionsModalContent.innerHTML = "";
+  connectionsModal.classList.add("hidden");
+  renderProfile();
+}
+
+function renderOpenConnectionsModal() {
+  if (!profileConnectionMode || connectionsModal.classList.contains("hidden")) return;
+  const profileUser = userById(state.viewedProfileId) || state.currentUser;
+  connectionsModalContent.innerHTML = renderProfileConnections(profileUser, profileConnectionMode);
+}
+
+function openPostPreview(postId) {
+  state.previewPostId = postId;
+  renderPostPreview(postId);
+  postModal.classList.remove("hidden");
+}
+
+function closePostPreview() {
+  state.previewPostId = null;
+  postModalContent.innerHTML = "";
+  postModal.classList.add("hidden");
+}
+
+function renderPostPreview(postId) {
+  const post = state.posts.find((item) => item.id === postId);
+  if (!post) {
+    closePostPreview();
+    return;
+  }
+
+  const author = post.author || userById(post.authorId);
+  const liked = post.likes.includes(state.currentUser.id);
+  const shared = post.shares.includes(state.currentUser.id);
+  const saved = state.currentUser.savedPosts.includes(post.id);
+  const mine = post.authorId === state.currentUser.id;
+  const tags = extractTags(post.body);
+
+  postModalContent.innerHTML = `
+    <article class="post-card post-preview-card">
+      <div class="post-head">
+        <button class="identity profile-link" data-profile-id="${author?.id || ""}" type="button">
+          <div class="avatar">${initials(author?.fullName || "U")}</div>
+          <div>
+            <strong>${escapeHtml(author?.fullName || "Unknown")}</strong>
+            <span>@${escapeHtml(author?.username || "user")}${modBadge(author)} - ${escapeHtml(karmaRank(author?.karma || 0))}</span>
+          </div>
+        </button>
+        <div class="post-meta">${formatTime(post.createdAt)}</div>
+      </div>
+      ${post.imageData ? `<img class="post-image" src="${post.imageData}" alt="Post by ${escapeHtml(author?.username || "user")}" />` : ""}
+      <div class="post-body">${renderTextWithMentions(post.body)}</div>
+      ${
+        tags.length
+          ? `<div class="post-tags">${tags
+              .slice(0, 6)
+              .map((tag) => tagButton(tag))
+              .join("")}</div>`
+          : ""
+      }
+      <div class="post-stats">
+        <strong>${post.likes.length} hearts</strong>
+        <span>${post.shares.length} reposts</span>
+        <span>${post.comments.length} comments</span>
+      </div>
+      <div class="post-actions">
+        <button class="chip-btn ${liked ? "active" : ""}" data-action="like" data-post-id="${post.id}" type="button">Heart ${post.likes.length}</button>
+        <button class="chip-btn ${shared ? "active" : ""}" data-action="share" data-post-id="${post.id}" type="button">Repost ${post.shares.length}</button>
+        <button class="chip-btn ${saved ? "active save-active" : ""}" data-action="save" data-post-id="${post.id}" type="button">${saved ? "Saved" : "Save"}</button>
+        ${mine ? `<button class="chip-btn danger delete-post-btn" data-action="delete" data-post-id="${post.id}" type="button">Delete</button>` : `<button class="chip-btn" data-action="report" data-post-id="${post.id}" type="button">Report</button>`}
+      </div>
+      <div class="comments post-preview-comments">
+        ${post.comments
+          .map((comment) => {
+            const commenter = userById(comment.authorId);
+            return `<p><button class="inline-profile-link" data-profile-id="${commenter?.id || ""}" type="button">${escapeHtml(commenter?.username || "user")}${modBadge(commenter)}</button> ${renderTextWithMentions(comment.body)}</p>`;
+          })
+          .join("") || `<p class="profile-muted">No comments yet.</p>`}
+        <div class="comment-form">
+          <input data-comment-input="${post.id}" type="text" maxlength="180" placeholder="Add a comment..." />
+          <button class="text-action" data-action="comment" data-post-id="${post.id}" type="button">Post</button>
+        </div>
+      </div>
+    </article>
   `;
 }
 
@@ -1392,10 +1702,46 @@ function moderatorKarmaControls(userId) {
   `;
 }
 
+function karmaCooldownRemaining(userId) {
+  if (state.currentUser?.isModerator) return 0;
+  const lastVoteAt = Number(state.currentUser?.karmaVoteTimes?.[userId] || 0);
+  if (!lastVoteAt) return 0;
+  return Math.max(0, lastVoteAt + 24 * 60 * 60 * 1000 - Date.now());
+}
+
+function formatCooldown(ms) {
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (!hours) return `${minutes}m`;
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
 function reactionSummary(reactions) {
   const counts = new Map();
   Object.values(reactions || {}).forEach((reaction) => counts.set(reaction, (counts.get(reaction) || 0) + 1));
   return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+}
+
+function showTaggedPosts(tag) {
+  const normalized = normalizeTag(tag);
+  if (!normalized) return;
+
+  activeTag = normalized;
+  feedFilter = "all";
+  document.querySelectorAll(".feed-tab").forEach((item) => {
+    item.classList.toggle("active", item.dataset.feedFilter === "all");
+  });
+  closePostPreview();
+  showView("feed");
+  renderTagFilterBar();
+  renderPosts();
+}
+
+function clearTaggedPosts() {
+  activeTag = "";
+  renderTagFilterBar();
+  renderPosts();
 }
 
 function profileSectionTitle(tab, user, own) {
@@ -1670,18 +2016,46 @@ function escapeHtml(value) {
 }
 
 function renderTextWithMentions(value) {
-  return escapeHtml(value).replace(
+  return escapeHtml(value)
+    .replace(
     /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g,
     (match, prefix, username) => {
       const user = state.users.find((item) => item.username.toLowerCase() === username.toLowerCase());
       if (!user) return `${prefix}<span class="mention">@${username}</span>`;
       return `${prefix}<button class="mention mention-link" data-mention-user="${user.id}" type="button">@${escapeHtml(user.username)}${modBadge(user)}</button>`;
     },
-  );
+  )
+    .replace(
+      /(^|[^a-zA-Z0-9_])#([a-zA-Z0-9_]{2,40})/g,
+      (match, prefix, tag) =>
+        `${prefix}<button class="hashtag-link" data-tag-filter="${escapeAttribute(tag.toLowerCase())}" type="button">#${escapeHtml(tag.toLowerCase())}</button>`,
+    );
 }
 
 function modBadge(user) {
   return user?.isModerator ? `<span class="mod-badge" title="Closebook Moderator">MOD</span>` : "";
+}
+
+function normalizeTag(tag) {
+  return String(tag || "")
+    .replace(/^#/, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "");
+}
+
+function extractTags(value) {
+  const found = String(value || "").match(/#[a-zA-Z0-9_]{2,40}/g) || [];
+  return Array.from(new Set(found.map(normalizeTag).filter(Boolean)));
+}
+
+function postHasTag(post, tag) {
+  return extractTags(post.body).includes(normalizeTag(tag));
+}
+
+function tagButton(tag) {
+  const normalized = normalizeTag(tag);
+  return `<button class="tag-chip ${activeTag === normalized ? "active" : ""}" data-tag-filter="${escapeAttribute(normalized)}" type="button">#${escapeHtml(normalized)}</button>`;
 }
 
 function escapeAttribute(value) {

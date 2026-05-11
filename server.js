@@ -111,6 +111,7 @@ async function handleApi(req, res, url) {
       website: "",
       karma: 0,
       votedUsers: {},
+      karmaVoteTimes: {},
       following: [],
       followers: [],
       savedPosts: [],
@@ -411,9 +412,16 @@ async function handleApi(req, res, url) {
       return sendJson(res, 400, { error: "Karma vote must be +1 or -1." });
     }
 
-    const previousVote = currentUser.votedUsers[target.id] || 0;
-    target.karma += vote - previousVote;
+    const lastVoteAt = Number(currentUser.karmaVoteTimes?.[target.id] || 0);
+    const cooldownMs = 24 * 60 * 60 * 1000;
+    const cooldownRemaining = lastVoteAt + cooldownMs - Date.now();
+    if (!currentUser.isModerator && cooldownRemaining > 0) {
+      return sendJson(res, 429, { error: `You can vote on this user's karma again in ${formatDuration(cooldownRemaining)}.` });
+    }
+
+    target.karma += vote;
     currentUser.votedUsers[target.id] = vote;
+    currentUser.karmaVoteTimes[target.id] = Date.now();
     addNotification(db, {
       userId: target.id,
       actorId: currentUser.id,
@@ -1041,6 +1049,7 @@ function ensureIrisBot(db) {
       website: "",
       karma: 100,
       votedUsers: {},
+      karmaVoteTimes: {},
       following: [],
       followers: [],
       savedPosts: [],
@@ -1115,12 +1124,11 @@ function publicUser(user) {
     id: user.id,
     fullName: user.fullName,
     username: user.username,
-    age: user.age,
-    email: user.email,
     bio: user.bio || "",
     website: user.website || "",
     karma: user.karma,
     votedUsers: user.votedUsers || {},
+    karmaVoteTimes: user.karmaVoteTimes || {},
     following: user.following || [],
     followers: user.followers || [],
     savedPosts: user.savedPosts || [],
@@ -1135,6 +1143,8 @@ function adminUser(user) {
 
   return {
     ...publicUser(user),
+    age: user.age,
+    email: user.email,
     registeredIp: user.registeredIp || "",
     lastIp: user.lastIp || "",
     moderation: user.moderation || defaultModeration(),
@@ -1395,6 +1405,7 @@ function normalizeDb(db) {
     user.bio = user.bio || "";
     user.website = user.website || "";
     user.votedUsers = user.votedUsers || {};
+    user.karmaVoteTimes = user.karmaVoteTimes || {};
     user.following = Array.isArray(user.following) ? user.following : [];
     user.followers = Array.isArray(user.followers) ? user.followers : [];
     user.savedPosts = Array.isArray(user.savedPosts) ? user.savedPosts : [];
@@ -1529,6 +1540,15 @@ function extractMentionedUsers(db, text, allowedUserIds = null) {
   if (!usernames.size) return [];
 
   return db.users.filter((user) => usernames.has(user.username.toLowerCase()) && (!allowed || allowed.has(user.id)));
+}
+
+function formatDuration(ms) {
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (!hours) return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  if (!minutes) return `${hours} hour${hours === 1 ? "" : "s"}`;
+  return `${hours} hour${hours === 1 ? "" : "s"} ${minutes} minute${minutes === 1 ? "" : "s"}`;
 }
 
 function addNotification(db, notification) {
