@@ -59,6 +59,9 @@ const closePostModal = document.querySelector("#close-post-modal");
 const postModalContent = document.querySelector("#post-modal-content");
 const connectionsModal = document.querySelector("#connections-modal");
 const connectionsModalContent = document.querySelector("#connections-modal-content");
+const profileEditorModal = document.querySelector("#profile-editor-modal");
+const profileEditorContent = document.querySelector("#profile-editor-content");
+const closeProfileEditor = document.querySelector("#close-profile-editor");
 const chatList = document.querySelector("#chat-list");
 const messagesList = document.querySelector("#messages-list");
 const messageForm = document.querySelector("#message-form");
@@ -69,8 +72,12 @@ const chatMessage = document.querySelector("#chat-message");
 const groupMessage = document.querySelector("#group-message");
 const activeChatHeader = document.querySelector("#active-chat-header");
 const notificationsList = document.querySelector("#notifications-list");
+const communitiesList = document.querySelector("#communities-list");
 const markReadBtn = document.querySelector("#mark-read-btn");
+const mobileMenuBtn = document.querySelector("#mobile-menu-btn");
+const mobileMoreMenu = document.querySelector("#mobile-more-menu");
 const chatBackBtn = document.querySelector("#chat-back-btn");
+const chatInfoBtn = document.querySelector("#chat-info-btn");
 const chatLayout = document.querySelector(".chat-layout");
 const chatSettings = document.querySelector("#chat-settings");
 const replyPreview = document.querySelector("#reply-preview");
@@ -80,6 +87,7 @@ const voiceMessageBtn = document.querySelector("#voice-message-btn");
 const typingIndicator = document.querySelector("#typing-indicator");
 
 let selectedImageData = "";
+let botPostImages = {};
 let liveSource = null;
 let refreshTimer = null;
 let typingTimer = null;
@@ -94,6 +102,7 @@ let replyToMessageId = "";
 let profileTab = "posts";
 let profileConnectionMode = "";
 let chatQuery = "";
+let chatInfoOpen = false;
 const EMOJI_ITEMS = [
   ["😀", "grin happy smile"], ["😃", "happy smile"], ["😄", "laugh smile"], ["😁", "beam smile"], ["😆", "laugh"], ["😂", "tears laugh"], ["🤣", "rolling laugh"], ["😊", "blush happy"],
   ["😍", "love heart eyes"], ["😘", "kiss"], ["😎", "cool sunglasses"], ["🤩", "star eyes"], ["🥳", "party"], ["😭", "cry tears"], ["😤", "triumph"], ["😡", "angry"],
@@ -309,6 +318,7 @@ logoutBtn.addEventListener("click", async () => {
 
 document.querySelectorAll(".nav-link").forEach((button) => {
   button.addEventListener("click", async () => {
+    if (!button.dataset.view) return;
     const nextView = button.dataset.view;
     const previousView = state.activeView;
 
@@ -325,7 +335,20 @@ document.querySelectorAll(".nav-link").forEach((button) => {
     }
     if (nextView === "chats") await refreshChats();
     if (nextView === "notifications") await refreshNotifications();
+    mobileMoreMenu.classList.add("hidden");
   });
+});
+
+mobileMenuBtn.addEventListener("click", () => {
+  mobileMoreMenu.classList.toggle("hidden");
+});
+
+mobileMoreMenu.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-view]");
+  if (!button) return;
+  mobileMoreMenu.classList.add("hidden");
+  showView(button.dataset.view);
+  if (button.dataset.view === "notifications") await refreshNotifications();
 });
 
 document.addEventListener("click", (event) => {
@@ -379,6 +402,12 @@ chatBackBtn.addEventListener("click", () => {
   clearActiveChat();
 });
 
+chatInfoBtn.addEventListener("click", () => {
+  if (!activeChat()) return;
+  chatInfoOpen = !chatInfoOpen;
+  renderMessages();
+});
+
 chatSearch.addEventListener("input", () => {
   chatQuery = chatSearch.value.trim().toLowerCase();
   renderChats();
@@ -419,6 +448,106 @@ peopleSearch.addEventListener("input", () => {
 markReadBtn.addEventListener("click", async () => {
   await api("/api/notifications/read", { method: "POST" });
   await refreshNotifications();
+});
+
+communitiesList.addEventListener("click", async (event) => {
+  const focusCreate = event.target.closest("[data-focus-create-community]");
+  if (focusCreate) {
+    const details = communitiesList.querySelector("[data-create-community-panel]");
+    details?.setAttribute("open", "");
+    communitiesList.querySelector("[data-create-community-name]")?.focus();
+    return;
+  }
+
+  const featureButton = event.target.closest("button[data-bot-feature]");
+  if (featureButton) {
+    const bot = userById(featureButton.dataset.botId);
+    if (!bot) return;
+    await api(`/api/bots/${bot.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        fullName: bot.fullName,
+        bio: bot.bio || "",
+        ...bot.botFeatures,
+        [featureButton.dataset.botFeature]: !(bot.botFeatures || {})[featureButton.dataset.botFeature],
+      }),
+    });
+    await refreshSocial();
+    return;
+  }
+
+  const viewButton = event.target.closest("[data-view]");
+  if (viewButton) showView(viewButton.dataset.view);
+});
+
+profileCard.addEventListener("change", async (event) => {
+  const input = event.target.closest("[data-bot-post-image]");
+  if (!input) return;
+
+  const botId = input.dataset.botId;
+  const preview = profileCard.querySelector(`[data-bot-post-preview="${botId}"]`);
+  botPostImages[botId] = "";
+  if (preview) {
+    preview.innerHTML = "";
+    preview.classList.add("hidden");
+  }
+
+  const file = input.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    input.value = "";
+    return;
+  }
+  if (file.size > 1_500_000) {
+    input.value = "";
+    if (preview) {
+      preview.innerHTML = `<p class="form-note">Choose an image smaller than 1.5 MB.</p>`;
+      preview.classList.remove("hidden");
+    }
+    return;
+  }
+
+  botPostImages[botId] = await fileToDataUrl(file);
+  if (preview) {
+    preview.innerHTML = `<img src="${botPostImages[botId]}" alt="Community post preview" />`;
+    preview.classList.remove("hidden");
+  }
+});
+
+communitiesList.addEventListener("submit", async (event) => {
+  const createForm = event.target.closest("[data-create-bot-form]");
+  const editForm = event.target.closest("[data-edit-bot-form]");
+  if (!createForm && !editForm) return;
+
+  event.preventDefault();
+  const form = createForm || editForm;
+  const message = form.querySelector("[data-form-message]");
+  if (message) message.textContent = "";
+  const data = Object.fromEntries(new FormData(form));
+
+  try {
+    if (createForm) {
+      await api("/api/bots", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      form.reset();
+    } else {
+      await api(`/api/bots/${form.dataset.botId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          fullName: data.fullName,
+          bio: data.bio,
+          irisCore: data.irisCore === "on",
+          autoWelcome: data.autoWelcome === "on",
+          antiSpam: data.antiSpam === "on",
+        }),
+      });
+    }
+    await refreshSocial();
+  } catch (error) {
+    if (message) message.textContent = error.message;
+  }
 });
 
 postBody.addEventListener("input", () => {
@@ -608,6 +737,18 @@ peopleList.addEventListener("click", async (event) => {
 });
 
 profileCard.addEventListener("click", async (event) => {
+  const editProfileButton = event.target.closest("button[data-edit-profile]");
+  if (editProfileButton) {
+    openProfileEditor(editProfileButton.dataset.editProfile);
+    return;
+  }
+
+  const viewButton = event.target.closest("button[data-view]");
+  if (viewButton) {
+    showView(viewButton.dataset.view);
+    return;
+  }
+
   const connectionButton = event.target.closest("button[data-profile-list]");
   if (connectionButton) {
     openConnectionsModal(connectionButton.dataset.profileList);
@@ -681,6 +822,42 @@ connectionsModal.addEventListener("click", async (event) => {
     closeConnectionsModal();
     await startDirectMessage(messageButton.dataset.messageUser);
   }
+});
+
+closeProfileEditor.addEventListener("click", closeProfileEditorModal);
+
+profileEditorModal.addEventListener("click", (event) => {
+  if (event.target === profileEditorModal) closeProfileEditorModal();
+});
+
+profileEditorContent.addEventListener("submit", async (event) => {
+  const userForm = event.target.closest("[data-modal-user-edit-form]");
+  const botForm = event.target.closest("[data-modal-bot-edit-form]");
+  if (!userForm && !botForm) return;
+
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(userForm || botForm));
+
+  if (userForm) {
+    await api("/api/me", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  } else {
+    await api(`/api/bots/${botForm.dataset.botId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        fullName: data.fullName,
+        bio: data.bio,
+        irisCore: data.irisCore === "on",
+        autoWelcome: data.autoWelcome === "on",
+        antiSpam: data.antiSpam === "on",
+      }),
+    });
+  }
+
+  closeProfileEditorModal();
+  await refreshSocial();
 });
 
 chatForm.addEventListener("submit", async (event) => {
@@ -791,6 +968,7 @@ chatList.addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-chat-id]");
   if (!button) return;
   state.activeChatId = button.dataset.chatId;
+  chatInfoOpen = false;
   localStorage.setItem(ACTIVE_CHAT_KEY, state.activeChatId);
   showView("chats");
   chatLayout.classList.add("thread-open");
@@ -851,6 +1029,40 @@ chatMentionSuggestions.addEventListener("mousedown", (event) => {
 });
 
 profileCard.addEventListener("submit", async (event) => {
+  const botPostForm = event.target.closest("[data-bot-post-form]");
+  if (botPostForm) {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(botPostForm));
+    const imageData = botPostImages[botPostForm.dataset.botId] || "";
+    if (!String(data.body || "").trim() && !imageData) return;
+    await api(`/api/bots/${botPostForm.dataset.botId}/posts`, {
+      method: "POST",
+      body: JSON.stringify({ body: data.body, imageData }),
+    });
+    botPostImages[botPostForm.dataset.botId] = "";
+    botPostForm.reset();
+    await refreshSocial();
+    return;
+  }
+
+  const botEditForm = event.target.closest("[data-profile-bot-edit-form]");
+  if (botEditForm) {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(botEditForm));
+    await api(`/api/bots/${botEditForm.dataset.botId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        fullName: data.fullName,
+        bio: data.bio,
+        irisCore: data.irisCore === "on",
+        autoWelcome: data.autoWelcome === "on",
+        antiSpam: data.antiSpam === "on",
+      }),
+    });
+    await refreshSocial();
+    return;
+  }
+
   const form = event.target.closest("#profile-edit-form");
   if (!form) return;
 
@@ -990,6 +1202,7 @@ function render() {
   renderChats();
   renderMessages();
   renderNotifications();
+  renderCommunities();
   renderProfile();
   if (state.previewPostId) renderPostPreview(state.previewPostId);
   renderOpenConnectionsModal();
@@ -1046,6 +1259,8 @@ function renderHeader() {
     button.dataset.badge = count ? String(count) : "";
     button.classList.toggle("has-badge", count > 0);
   });
+  mobileMenuBtn.dataset.badge = unreadNotifications ? String(unreadNotifications) : "";
+  mobileMenuBtn.classList.toggle("has-badge", unreadNotifications > 0);
 }
 
 function renderStories() {
@@ -1100,7 +1315,7 @@ function renderPosts() {
       const shared = post.shares.includes(state.currentUser.id);
       const saved = state.currentUser.savedPosts.includes(post.id);
       const previewComments = post.comments.slice(-3);
-      const mine = post.authorId === state.currentUser.id;
+      const mine = canManagePost(post, author);
       const tags = extractTags(post.body);
 
       return `
@@ -1348,9 +1563,10 @@ function renderChats() {
     .map((chat) => {
           const last = chat.messages.at(-1);
           const unread = unreadChatCount(chat);
+          const groupBot = chat.direct ? null : chat.members.map(userById).find((user) => user?.isBot && user.botFeatures?.irisCore);
           return `
             <button class="chat-item ${chat.id === state.activeChatId ? "active" : ""}" data-chat-id="${chat.id}" type="button">
-              <span class="chat-avatar">${chat.direct ? initials(chatDisplayName(chat)) : chat.members.includes("user_iris_bot") ? "IB" : "GC"}</span>
+              <span class="chat-avatar">${chat.direct ? initials(chatDisplayName(chat)) : groupBot ? initials(groupBot.fullName) : "GC"}</span>
               <span>
                 <strong>${escapeHtml(chatDisplayName(chat))} ${unread ? `<b class="unread-dot">${unread}</b>` : ""}</strong>
                 <small>${last ? escapeHtml(last.system ? last.body : last.body) : `${chat.members.length} members`}</small>
@@ -1384,7 +1600,10 @@ function renderMessages() {
   const chat = activeChat();
 
   messageForm.classList.toggle("hidden", !chat);
-  chatSettings.classList.toggle("hidden", !chat);
+  chatSettings.classList.toggle("hidden", !chat || !chatInfoOpen);
+  chatInfoBtn.classList.toggle("hidden", !chat);
+  chatInfoBtn.classList.toggle("active", Boolean(chat && chatInfoOpen));
+  chatInfoBtn.setAttribute("aria-expanded", chat && chatInfoOpen ? "true" : "false");
 
   if (!chat) {
     activeChatHeader.querySelector("span").textContent = "Select or create a chat";
@@ -1410,32 +1629,34 @@ function renderMessages() {
             return `<div class="system-message">${escapeHtml(message.body)}</div>`;
           }
           return `
-            <div class="message ${mine ? "mine" : ""}" id="message-${message.id}">
-              ${
-                replied
-                  ? `<div class="reply-card">Reply to ${escapeHtml(repliedAuthor?.username || "user")}: ${renderTextWithMentions(replied.body.slice(0, 90))}</div>`
-                  : ""
-              }
-              <strong><button class="inline-profile-link" data-profile-id="${author?.id || ""}" type="button">${escapeHtml(author?.fullName || "Unknown")}${modBadge(author)}</button> - ${formatTime(message.createdAt)}</strong>
-              <span class="message-body">${renderMessageContent(message)}</span>
-              ${receipt ? `<span class="read-receipt">${escapeHtml(receipt)}</span>` : ""}
-              ${
-                reactionCounts.length
-                  ? `<div class="reaction-summary">${reactionCounts
-                      .map(([name, count]) => `<span>${escapeHtml(name)} ${count}</span>`)
-                      .join("")}</div>`
-                  : ""
-              }
-              <div class="message-tools">
-                <button class="reply-button" data-reply-message="${message.id}" type="button">Reply</button>
-                <button class="reply-button" data-report-message="${message.id}" type="button">Report</button>
-                <div class="reaction-picker">
-                  ${MESSAGE_REACTIONS.map(
-                    (reaction) =>
-                      `<button class="${currentReaction === reaction ? "active" : ""}" data-message-reaction="${reaction}" data-message-id="${message.id}" type="button">${reaction}</button>`,
-                  ).join("")}
+            <div class="message-stack ${mine ? "mine" : ""}">
+              <div class="message ${mine ? "mine" : ""}" id="message-${message.id}">
+                ${
+                  replied
+                    ? `<div class="reply-card">Reply to ${escapeHtml(repliedAuthor?.username || "user")}: ${renderTextWithMentions(replied.body.slice(0, 90))}</div>`
+                    : ""
+                }
+                <strong><button class="inline-profile-link" data-profile-id="${author?.id || ""}" type="button">${escapeHtml(author?.fullName || "Unknown")}${modBadge(author)}</button> - ${formatTime(message.createdAt)}</strong>
+                <span class="message-body">${renderMessageContent(message)}</span>
+                ${
+                  reactionCounts.length
+                    ? `<div class="reaction-summary">${reactionCounts
+                        .map(([name, count]) => `<span>${escapeHtml(name)} ${count}</span>`)
+                        .join("")}</div>`
+                    : ""
+                }
+                <div class="message-tools">
+                  <button class="reply-button" data-reply-message="${message.id}" type="button">Reply</button>
+                  <button class="reply-button" data-report-message="${message.id}" type="button">Report</button>
+                  <div class="reaction-picker">
+                    ${MESSAGE_REACTIONS.map(
+                      (reaction) =>
+                        `<button class="${currentReaction === reaction ? "active" : ""}" data-message-reaction="${reaction}" data-message-id="${message.id}" type="button">${reaction}</button>`,
+                    ).join("")}
+                  </div>
                 </div>
               </div>
+              ${receipt ? `<span class="read-receipt">${escapeHtml(receipt)}</span>` : ""}
             </div>
           `;
         })
@@ -1466,11 +1687,157 @@ function renderNotifications() {
     : emptyState("No activity yet.");
 }
 
+function renderCommunities() {
+  if (!communitiesList) return;
+  const iris = state.users.find((user) => user.id === "user_iris_bot" || user.username === "irisbot");
+  const ownedBots = state.users.filter((user) => user.isBot && user.botOwnerId === state.currentUser.id);
+  const communityBots = state.users.filter((user) => user.isBot && user.botCommunity);
+  const totalBotPosts = state.posts.filter((post) => userById(post.authorId)?.isBot).length;
+
+  communitiesList.innerHTML = `
+    <div class="community-hub-layout">
+      <section class="community-main-column">
+        <article class="community-card community-overview-card">
+          <div class="community-section-head">
+            <div>
+              <span>Communities</span>
+              <h3>Explore bot-powered communities</h3>
+              <p>Community pages act like public bot profiles. Owners can post updates, enable Iris Core powers, and add their bots into group chats.</p>
+            </div>
+            <button class="primary-action compact" data-focus-create-community type="button">Create Community</button>
+          </div>
+          <div class="community-metrics">
+            <div><strong>${communityBots.length}</strong><span>communities</span></div>
+            <div><strong>${ownedBots.length}</strong><span>owned by you</span></div>
+            <div><strong>${totalBotPosts}</strong><span>community posts</span></div>
+          </div>
+        </article>
+
+        <article class="community-card iris-community-card">
+          <div class="community-hero">
+            <div class="avatar large">IB</div>
+            <div>
+              <span>Father of all bots</span>
+              <h3>Iris Bot Community</h3>
+              <p>Iris Core is the master command set that can power your own bots: rules, warnings, mutes, bans, slow mode, locks, welcome posts, and status checks.</p>
+            </div>
+          </div>
+          <div class="community-feature-row">
+            <span>Iris Core</span><span>Moderation</span><span>Rules</span><span>Welcome posts</span>
+          </div>
+          <div class="community-actions">
+            <button class="chip-btn" data-profile-id="${iris?.id || "user_iris_bot"}" type="button">Open Iris Profile</button>
+            <button class="chip-btn" data-view="chats" type="button">Go to Messages</button>
+          </div>
+        </article>
+
+        <article class="community-card">
+          <div class="community-section-head">
+            <div>
+              <span>Directory</span>
+              <h3>Community list</h3>
+            </div>
+            <strong>${communityBots.length}</strong>
+          </div>
+          <div class="bot-directory">
+            ${communityBots.map((bot) => botDirectoryCard(bot)).join("")}
+          </div>
+        </article>
+      </section>
+
+      <aside class="community-side-panel">
+        <details class="community-card create-community-panel" data-create-community-panel>
+          <summary>
+            <span>Create</span>
+            <strong>New community</strong>
+          </summary>
+          <form class="bot-create-form" data-create-bot-form>
+            <input data-create-community-name name="fullName" type="text" maxlength="60" placeholder="Community name, e.g. Nova Guard" required />
+            <input name="username" type="text" maxlength="24" placeholder="community_username" required />
+            <textarea name="bio" maxlength="140" placeholder="Describe what this community/bot does..."></textarea>
+            <button class="primary-action compact" type="submit">Create Community</button>
+            <p class="form-note" data-form-message></p>
+          </form>
+        </details>
+
+        <article class="community-card manage-community-panel">
+          <div class="community-section-head">
+            <div>
+              <span>Manage</span>
+              <h3>Your communities</h3>
+            </div>
+            <strong>${ownedBots.length}</strong>
+          </div>
+          <div class="bot-community-grid">
+            ${
+              ownedBots.length
+                ? ownedBots.map((bot) => botCommunityManageCard(bot)).join("")
+                : `<p class="profile-muted">Create a community, then activate Iris Core features here.</p>`
+            }
+          </div>
+        </article>
+      </aside>
+    </div>
+  `;
+}
+
+function botCommunityManageCard(bot) {
+  const features = bot.botFeatures || {};
+  return `
+    <section class="bot-manage-card">
+      <button class="identity profile-link" data-profile-id="${bot.id}" type="button">
+        <div class="avatar">${initials(bot.fullName)}</div>
+        <span>
+          <strong>${escapeHtml(bot.fullName)}</strong>
+          <small>@${escapeHtml(bot.username)} - ${features.irisCore ? "Iris Core active" : "Basic bot"}</small>
+        </span>
+      </button>
+      <form data-edit-bot-form data-bot-id="${bot.id}" class="bot-manage-form">
+        <input name="fullName" value="${escapeAttribute(bot.fullName)}" maxlength="60" />
+        <textarea name="bio" maxlength="140">${escapeHtml(bot.bio || "")}</textarea>
+        <details class="bot-feature-store" open>
+          <summary>Activate bot features</summary>
+          <div>
+            <label><input name="irisCore" type="checkbox" ${features.irisCore ? "checked" : ""} /> Iris Core moderation</label>
+            <label><input name="autoWelcome" type="checkbox" ${features.autoWelcome ? "checked" : ""} /> Welcome and rules posts</label>
+            <label><input name="antiSpam" type="checkbox" ${features.antiSpam ? "checked" : ""} /> Anti-spam guard</label>
+          </div>
+        </details>
+        <button class="chip-btn" type="submit">Save bot</button>
+        <p class="form-note" data-form-message></p>
+      </form>
+    </section>
+  `;
+}
+
+function botDirectoryCard(bot) {
+  const owner = userById(bot.botOwnerId);
+  const features = bot.botFeatures || {};
+  const posts = state.posts.filter((post) => post.authorId === bot.id);
+  const likes = posts.reduce((total, post) => total + post.likes.length, 0);
+  return `
+    <button class="bot-directory-card profile-link" data-profile-id="${bot.id}" type="button">
+      <div class="avatar">${initials(bot.fullName)}</div>
+      <span>
+        <strong>${escapeHtml(bot.fullName)}</strong>
+        <small>@${escapeHtml(bot.username)}${owner ? ` by @${escapeHtml(owner.username)}` : ""}</small>
+        <small>${posts.length} posts - ${likes} hearts - ${bot.karma} karma</small>
+      </span>
+      <em>${features.irisCore ? "Iris Core" : "Community"}</em>
+    </button>
+  `;
+}
+
 function renderProfile() {
   if (!state.currentUser) return;
 
   const profileUser = userById(state.viewedProfileId) || state.currentUser;
+  if (profileUser.isBot && profileUser.username === "irisbot") {
+    profileCard.innerHTML = renderIrisCommunityProfile(profileUser);
+    return;
+  }
   const isOwnProfile = profileUser.id === state.currentUser.id;
+  const canManageBot = profileUser.isBot && profileUser.botOwnerId === state.currentUser.id;
   const userPosts = state.posts.filter((post) => post.authorId === profileUser.id);
   const saved = state.posts.filter((post) => profileUser.savedPosts.includes(post.id));
   const likedPosts = state.posts.filter((post) => post.likes.includes(profileUser.id));
@@ -1504,19 +1871,37 @@ function renderProfile() {
       <div class="avatar">${initials(profileUser.fullName)}</div>
       <div>
         <h2>${escapeHtml(profileUser.fullName)}</h2>
-        <p class="profile-muted">@${escapeHtml(profileUser.username)}${modBadge(profileUser)} - ${escapeHtml(karmaRank(profileUser.karma))}</p>
+        <p class="profile-muted">@${escapeHtml(profileUser.username)}${modBadge(profileUser)}${profileUser.isBot ? " - community bot" : ""} - ${escapeHtml(karmaRank(profileUser.karma))}</p>
         ${profileUser.bio ? `<p class="profile-bio">${escapeHtml(profileUser.bio)}</p>` : ""}
         ${profileUser.website ? `<p class="profile-muted">${escapeHtml(profileUser.website)}</p>` : ""}
       </div>
     </div>
     ${
-      isOwnProfile
-        ? `<form id="profile-edit-form" class="profile-edit">
-            <input name="fullName" type="text" maxlength="70" value="${escapeAttribute(profileUser.fullName)}" required />
-            <input name="website" type="text" maxlength="80" value="${escapeAttribute(profileUser.website || "")}" placeholder="Website or link" />
-            <textarea name="bio" maxlength="140" placeholder="Write a short bio...">${escapeHtml(profileUser.bio || "")}</textarea>
-            <button class="primary-action compact" type="submit">Save profile</button>
+      canManageBot
+        ? `<div class="profile-actions clean-profile-actions">
+            <button class="primary-action compact" data-edit-profile="${profileUser.id}" type="button">Edit profile</button>
+            <button class="chip-btn" data-view="communities" type="button">Manage community</button>
+            <button class="chip-btn" data-view="chats" type="button">Add to group</button>
+          </div>
+          <form data-bot-post-form data-bot-id="${profileUser.id}" class="bot-post-composer">
+            <textarea name="body" maxlength="280" placeholder="Post as ${escapeAttribute(profileUser.fullName)}..."></textarea>
+            <label class="media-upload-chip">
+              <input data-bot-post-image data-bot-id="${profileUser.id}" type="file" accept="image/*" />
+              Add photo
+            </label>
+            <div class="image-preview hidden" data-bot-post-preview="${profileUser.id}"></div>
+            <button class="primary-action compact" type="submit">Publish as bot</button>
           </form>`
+        : isOwnProfile
+        ? `<div class="profile-actions clean-profile-actions">
+            <button class="primary-action compact" data-edit-profile="${profileUser.id}" type="button">Edit profile</button>
+          </div>`
+        : profileUser.isBot
+          ? `<div class="profile-actions">
+              <button class="chip-btn" data-view="communities" type="button">Community</button>
+              <button class="chip-btn" data-view="chats" type="button">Add to group</button>
+              <button class="chip-btn" data-report-user="${profileUser.id}" type="button">Report</button>
+            </div>`
         : `<div class="profile-actions">
             <button class="chip-btn ${following ? "active save-active" : ""}" data-follow-user="${profileUser.id}" type="button">${following ? "Following" : "Follow"}</button>
             <button class="chip-btn" data-message-user="${profileUser.id}" type="button">Message</button>
@@ -1534,6 +1919,7 @@ function renderProfile() {
       <button class="stat-box clickable ${profileConnectionMode === "following" ? "active" : ""}" data-profile-list="following" type="button"><strong>${profileUser.following.length}</strong><span class="profile-muted">Following</span></button>
       <div class="stat-box"><strong>${profileUser.karma}</strong><span class="profile-muted">Karma</span></div>
       ${isOwnProfile ? `<div class="stat-box"><strong>${saved.length}</strong><span class="profile-muted">Saved</span></div>` : ""}
+      ${canManageBot ? `<div class="stat-box"><strong>${profileUser.botFeatures?.irisCore ? "On" : "Off"}</strong><span class="profile-muted">Iris Core</span></div>` : ""}
     </div>
     <div class="profile-tabs" aria-label="Profile post filters">
       ${availableTabs
@@ -1619,6 +2005,155 @@ function renderProfileConnections(profileUser, mode) {
   `;
 }
 
+function renderIrisCommunityProfile(iris) {
+  const groupsWithIris = state.chats.filter((chat) => !chat.direct && chat.members.includes(iris.id));
+  const canManageBot = iris.botOwnerId === state.currentUser.id;
+  const irisPosts = state.posts.filter((post) => post.authorId === iris.id);
+  const commandDocs = [
+    ["/help", "Show every command Iris Core can use."],
+    ["/status", "Check lock, slow mode, welcome, and rules status."],
+    ["/rules", "Display the current group rules."],
+    ["/set rules <rules>", "Save rules. Supports multiple lines."],
+    ["/welcome <message>", "Set the new-member welcome message."],
+    ["/welcome off", "Disable the welcome message."],
+    ["/lock", "Pause member messages."],
+    ["/unlock", "Resume member messages."],
+    ["/slowmode <seconds|off>", "Limit how often non-admins can speak."],
+    ["/warn @user", "Warn a member. Three warnings kicks them."],
+    ["/warnings @user", "Show a member's warning count."],
+    ["/clear warnings @user", "Reset one member's warnings."],
+    ["/clear all warnings", "Reset warnings for everyone."],
+    ["/mute @user <minutes>", "Mute a member temporarily."],
+    ["/kick @user", "Remove a member from the group."],
+    ["/ban @user", "Ban and remove a member."],
+    ["/unban @user", "Allow a banned member back."],
+    ["/purge <1-50>", "Remove recent member messages."],
+  ];
+  const docs = [
+    {
+      title: "Pinned setup guide",
+      body: "Add Iris Bot from group settings, then make Iris an admin. After that, moderation commands, rules, welcome messages, locks, slow mode, warnings, mutes, kicks, and bans become available for group admins.",
+      tags: ["#iris", "#setup", "#groups"],
+      stats: "Pinned guide",
+    },
+    {
+      title: "Command handbook",
+      commands: commandDocs,
+      tags: ["#commands", "#moderation"],
+      stats: "Command docs",
+    },
+    {
+      title: "Safety notes",
+      body: "Iris respects group ownership. The bot will not moderate the group creator, itself, or active admins. Remove an admin role first if that person should become manageable by bot commands.",
+      tags: ["#safety", "#admins"],
+      stats: "Admin note",
+    },
+    {
+      title: "Rules and welcome post",
+      body: "Use /set rules followed by your full rules text. When new members join, Iris posts the saved rules and welcome message so everyone sees the group expectations immediately.",
+      tags: ["#rules", "#welcome"],
+      stats: "Group onboarding",
+    },
+  ];
+  const irisPostGrid = irisPosts
+    .map(
+      (post) => `
+        <button class="profile-grid-item" data-post-preview="${post.id}" type="button" title="${escapeAttribute(post.body.slice(0, 80))}">
+          ${
+            post.imageData
+              ? `<img src="${post.imageData}" alt="Iris post" />`
+              : `<div class="text-tile">${escapeHtml(post.body)}</div>`
+          }
+        </button>
+      `,
+    )
+    .join("");
+
+  return `
+    <div class="profile-cover iris-profile-cover">
+      <span>Closebook Community Bot</span>
+      <strong>${groupsWithIris.length} active groups</strong>
+    </div>
+    <div class="profile-top iris-profile-top">
+      <div class="avatar">IB</div>
+      <div>
+        <h2>${escapeHtml(iris.fullName || "Iris Bot")}</h2>
+        <p class="profile-muted">@${escapeHtml(iris.username)} - bot - ${escapeHtml(karmaRank(iris.karma))}</p>
+        <p class="profile-bio">Iris publishes moderation guides here like posts and helps group admins manage rules, warnings, mutes, bans, locks, slow mode, and welcome messages.</p>
+      </div>
+    </div>
+    <div class="profile-actions">
+      ${canManageBot ? `<button class="primary-action compact" data-edit-profile="${iris.id}" type="button">Edit profile</button>` : ""}
+      <button class="chip-btn" data-view="communities" type="button">Community Hub</button>
+      <button class="chip-btn" data-view="chats" type="button">Add Iris in Messages</button>
+    </div>
+    ${
+      canManageBot
+        ? `<form data-bot-post-form data-bot-id="${iris.id}" class="bot-post-composer">
+            <textarea name="body" maxlength="280" placeholder="Post as ${escapeAttribute(iris.fullName || "Iris Bot")}..."></textarea>
+            <label class="media-upload-chip">
+              <input data-bot-post-image data-bot-id="${iris.id}" type="file" accept="image/*" />
+              Add photo
+            </label>
+            <div class="image-preview hidden" data-bot-post-preview="${iris.id}"></div>
+            <button class="primary-action compact" type="submit">Publish as Iris</button>
+          </form>`
+        : ""
+    }
+    <div class="stat-grid iris-stat-grid">
+      <div class="stat-box"><strong>${docs.length + irisPosts.length}</strong><span class="profile-muted">Posts</span></div>
+      <div class="stat-box"><strong>${groupsWithIris.length}</strong><span class="profile-muted">Active groups</span></div>
+      <div class="stat-box"><strong>${commandDocs.length}</strong><span class="profile-muted">Commands</span></div>
+      <div class="stat-box"><strong>${iris.karma}</strong><span class="profile-muted">Karma</span></div>
+      ${canManageBot ? `<div class="stat-box"><strong>Owner</strong><span class="profile-muted">Managed by you</span></div>` : ""}
+    </div>
+    ${
+      irisPosts.length
+        ? `<h3 class="profile-section-title">Iris feed posts</h3><div class="profile-grid iris-owned-post-grid">${irisPostGrid}</div>`
+        : ""
+    }
+    <h3 class="profile-section-title">Iris posts</h3>
+    <div class="iris-doc-posts">
+      ${docs
+        .map(
+          (doc, index) => `
+            <article class="post-card iris-doc-post">
+              <div class="post-head">
+                <button class="identity profile-link" data-profile-id="${iris.id}" type="button">
+                  <div class="avatar">IB</div>
+                  <div>
+                    <strong>${escapeHtml(iris.fullName || "Iris Bot")}</strong>
+                    <span>@${escapeHtml(iris.username)} - ${escapeHtml(doc.stats)}</span>
+                  </div>
+                </button>
+                <div class="post-meta">${index === 0 ? "Pinned" : "Guide"}</div>
+              </div>
+              <div class="post-body">
+                <h3>${escapeHtml(doc.title)}</h3>
+                ${
+                  doc.commands
+                    ? `<div class="iris-command-list">${doc.commands
+                        .map(([command, text]) => `<div><code>${escapeHtml(command)}</code><span>${escapeHtml(text)}</span></div>`)
+                        .join("")}</div>`
+                    : `<p>${escapeHtml(doc.body)}</p>`
+                }
+              </div>
+              <div class="post-tags">
+                ${doc.tags.map((tag) => tagButton(tag.slice(1))).join("")}
+              </div>
+              <div class="post-stats">
+                <strong>${index === 0 ? "Featured" : "Docs"}</strong>
+                <span>${doc.tags.length} tags</span>
+                <span>Useful for group admins</span>
+              </div>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function openConnectionsModal(mode) {
   profileConnectionMode = mode;
   connectionsModal.classList.remove("hidden");
@@ -1636,6 +2171,68 @@ function renderOpenConnectionsModal() {
   if (!profileConnectionMode || connectionsModal.classList.contains("hidden")) return;
   const profileUser = userById(state.viewedProfileId) || state.currentUser;
   connectionsModalContent.innerHTML = renderProfileConnections(profileUser, profileConnectionMode);
+}
+
+function openProfileEditor(userId) {
+  const profileUser = userById(userId) || state.currentUser;
+  if (!profileUser) return;
+  const canEditUser = profileUser.id === state.currentUser.id;
+  const canEditBot = profileUser.isBot && profileUser.botOwnerId === state.currentUser.id;
+  if (!canEditUser && !canEditBot) return;
+
+  profileEditorContent.innerHTML = canEditBot ? renderBotProfileEditor(profileUser) : renderUserProfileEditor(profileUser);
+  profileEditorModal.classList.remove("hidden");
+  profileEditorContent.querySelector("input, textarea, button")?.focus();
+}
+
+function closeProfileEditorModal() {
+  profileEditorContent.innerHTML = "";
+  profileEditorModal.classList.add("hidden");
+}
+
+function renderUserProfileEditor(user) {
+  return `
+    <form class="profile-edit modal-profile-edit" data-modal-user-edit-form>
+      <label>
+        <span>Full name</span>
+        <input name="fullName" type="text" maxlength="70" value="${escapeAttribute(user.fullName)}" required />
+      </label>
+      <label>
+        <span>Website</span>
+        <input name="website" type="text" maxlength="80" value="${escapeAttribute(user.website || "")}" placeholder="Website or link" />
+      </label>
+      <label>
+        <span>Bio</span>
+        <textarea name="bio" maxlength="140" placeholder="Write a short bio...">${escapeHtml(user.bio || "")}</textarea>
+      </label>
+      <button class="primary-action compact" type="submit">Save profile</button>
+    </form>
+  `;
+}
+
+function renderBotProfileEditor(bot) {
+  const features = bot.botFeatures || {};
+  return `
+    <form class="profile-edit modal-profile-edit bot-profile-editor" data-modal-bot-edit-form data-bot-id="${bot.id}">
+      <label>
+        <span>Community name</span>
+        <input name="fullName" type="text" maxlength="60" value="${escapeAttribute(bot.fullName)}" required />
+      </label>
+      <label>
+        <span>Description</span>
+        <textarea name="bio" maxlength="140" placeholder="Write bot bio...">${escapeHtml(bot.bio || "")}</textarea>
+      </label>
+      <section class="bot-feature-store" aria-label="Bot feature activation">
+        <strong>Activate bot features</strong>
+        <div>
+          <label><input name="irisCore" type="checkbox" ${features.irisCore ? "checked" : ""} /> Iris Core moderation</label>
+          <label><input name="autoWelcome" type="checkbox" ${features.autoWelcome ? "checked" : ""} /> Welcome and rules posts</label>
+          <label><input name="antiSpam" type="checkbox" ${features.antiSpam ? "checked" : ""} /> Anti-spam guard</label>
+        </div>
+      </section>
+      <button class="primary-action compact" type="submit">Save community</button>
+    </form>
+  `;
 }
 
 function openPostPreview(postId) {
@@ -1661,7 +2258,7 @@ function renderPostPreview(postId) {
   const liked = post.likes.includes(state.currentUser.id);
   const shared = post.shares.includes(state.currentUser.id);
   const saved = state.currentUser.savedPosts.includes(post.id);
-  const mine = post.authorId === state.currentUser.id;
+  const mine = canManagePost(post, author);
   const tags = extractTags(post.body);
 
   postModalContent.innerHTML = `
@@ -1816,6 +2413,10 @@ function profileSectionTitle(tab, user, own) {
   return own ? "Your posts" : `${escapeHtml(user.username)}'s posts`;
 }
 
+function canManagePost(post, author = userById(post.authorId)) {
+  return post.authorId === state.currentUser.id || (author?.isBot && author.botOwnerId === state.currentUser.id);
+}
+
 function unreadChatCount(chat) {
   const lastRead = chat.readBy?.[state.currentUser.id] || 0;
   return chat.messages.filter(
@@ -1829,6 +2430,7 @@ function activeChat() {
 
 function clearActiveChat() {
   state.activeChatId = null;
+  chatInfoOpen = false;
   localStorage.removeItem(ACTIVE_CHAT_KEY);
   chatLayout.classList.remove("thread-open");
   clearReply();
@@ -1867,30 +2469,41 @@ function renderChatSettings(chat) {
   if (chat.direct) {
     const other = userById(chat.members.find((id) => id !== state.currentUser.id));
     chatSettings.innerHTML = `
-      <div class="chat-profile-strip">
+      <section class="chat-info-card direct-info">
         <button class="identity profile-link" data-profile-id="${other?.id || ""}" type="button">
           <span class="chat-avatar">${initials(other?.fullName || "DM")}</span>
           <span><strong>${escapeHtml(other?.fullName || "Direct message")}${modBadge(other)}</strong><small>@${escapeHtml(other?.username || "user")}</small></span>
         </button>
-        <span class="chat-badge">Direct</span>
-      </div>
+        <div class="settings-pill-row">
+          <span class="chat-badge">Direct</span>
+          <span class="chat-badge">${chat.messages.length} messages</span>
+        </div>
+      </section>
     `;
     return;
   }
 
   const isAdmin = chat.creatorId === state.currentUser.id || chat.admins.includes(state.currentUser.id);
   const availableUsers = state.users.filter((user) => !chat.members.includes(user.id));
-  const irisInChat = chat.members.includes("user_iris_bot");
-  const irisActive = irisInChat && chat.admins.includes("user_iris_bot");
+  const coreBots = chat.members.map(userById).filter((user) => user?.isBot && user.botFeatures?.irisCore);
+  const activeBots = coreBots.filter((bot) => chat.admins.includes(bot.id));
+  const featuredBot = activeBots[0] || coreBots[0] || state.users.find((user) => user.id === "user_iris_bot");
   chatSettings.innerHTML = `
-    <details class="group-settings">
-      <summary>
-        <span>Group settings</span>
-        <b>${chat.members.length} members - ${chat.admins.length} admins ${irisActive ? "- Iris active" : irisInChat ? "- Iris needs admin" : ""}</b>
-      </summary>
-      <div class="bot-status ${irisActive ? "active" : ""}">
-        <strong>Iris Bot</strong>
-        <span>${irisActive ? "Moderation commands are active." : irisInChat ? "Make Iris Bot an admin to enable commands." : "Add Iris Bot as a member, then make it admin."}</span>
+    <section class="group-settings compact-settings">
+      <div class="settings-head">
+        <div>
+          <span>Group info</span>
+          <strong>${escapeHtml(chat.name)}</strong>
+        </div>
+        <div class="settings-pill-row">
+          <span class="chat-badge">${chat.members.length} members</span>
+          <span class="chat-badge">${chat.admins.length} admins</span>
+          <span class="chat-badge">${activeBots.length ? `${escapeHtml(activeBots[0].fullName)} active` : coreBots.length ? "Bot needs admin" : "Iris Core off"}</span>
+        </div>
+      </div>
+      <div class="bot-status ${activeBots.length ? "active" : ""}">
+        <strong>${escapeHtml(featuredBot?.fullName || "Iris Core")}</strong>
+        <span>${activeBots.length ? "Moderation commands are active." : coreBots.length ? "Make this bot an admin to enable commands." : "Add Iris Bot or your own Iris Core bot, then make it admin."}</span>
       </div>
       <div class="rules-card">
         <strong>Group rules</strong>
@@ -1916,11 +2529,11 @@ function renderChatSettings(chat) {
                 </select>
                 <button class="chip-btn" data-chat-action="add-member" type="button">Add to group</button>
               </div>
-              <p class="profile-muted">Bots are added manually like users. Iris Bot only moderates after an admin makes it admin.</p>
+              <p class="profile-muted">Bots are added manually like users. Any bot with Iris Core moderates after an admin makes it admin.</p>
             </details>
             <div class="command-card">
-              <strong>Iris commands</strong>
-              <span>/help</span><span>/set rules</span><span>/rules</span><span>/ban @user</span><span>/unban @user</span><span>/kick @user</span><span>/mute @user 10</span><span>/warn @user</span><span>/warnings @user</span>
+              <strong>Bot commands</strong>
+              <span>/help</span><span>/status</span><span>/set rules</span><span>/welcome</span><span>/lock</span><span>/unlock</span><span>/slowmode 30</span><span>/purge 10</span><span>/ban @user</span><span>/unban @user</span><span>/kick @user</span><span>/mute @user 10</span><span>/warn @user</span><span>/clear warnings</span>
             </div>`
           : ""
       }
@@ -1950,7 +2563,7 @@ function renderChatSettings(chat) {
           })
           .join("")}
       </div>
-    </details>
+    </section>
   `;
 }
 
@@ -2039,12 +2652,20 @@ function mediaLabel(value, type) {
 }
 
 function readReceiptText(chat, message) {
+  const ownMessages = chat.messages.filter((item) => item.authorId === state.currentUser.id && !item.system);
+  const latestOwnMessage = ownMessages.at(-1);
   const readers = chat.members
-    .filter((id) => id !== state.currentUser.id && Number(chat.readBy?.[id] || 0) >= message.createdAt)
+    .filter((id) => {
+      if (id === state.currentUser.id) return false;
+      const readAt = Number(chat.readBy?.[id] || 0);
+      if (readAt < message.createdAt) return false;
+      const latestReadOwnMessage = ownMessages.filter((item) => item.createdAt <= readAt).at(-1);
+      return latestReadOwnMessage?.id === message.id;
+    })
     .map((id) => userById(id)?.username)
     .filter(Boolean);
 
-  if (!readers.length) return "Delivered";
+  if (!readers.length) return latestOwnMessage?.id === message.id ? "Delivered" : "";
   if (chat.direct) return "Seen";
   return `Seen by ${readers.slice(0, 3).join(", ")}${readers.length > 3 ? ` +${readers.length - 3}` : ""}`;
 }

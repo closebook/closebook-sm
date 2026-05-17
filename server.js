@@ -10,6 +10,7 @@ const DATA_DIR = path.join(ROOT, "data");
 const DB_FILE = path.join(DATA_DIR, "database.json");
 const IRIS_BOT_ID = "user_iris_bot";
 const IRIS_BOT_USERNAME = "irisbot";
+const IRIS_OWNER_ID = "user_1777740146651_e496c9a55621";
 
 const emptyDb = {
   users: [],
@@ -276,6 +277,113 @@ async function handleApi(req, res, url) {
     return sendJson(res, 201, { ok: true });
   }
 
+  if (req.method === "POST" && url.pathname === "/api/bots") {
+    const body = await readBody(req);
+    const fullName = clean(body.fullName).slice(0, 60);
+    const username = clean(body.username).toLowerCase();
+    const bio = clean(body.bio).slice(0, 140);
+
+    if (!fullName || !username) return sendJson(res, 400, { error: "Bot name and username are required." });
+    if (!/^[a-z0-9_]{3,24}$/.test(username)) return sendJson(res, 400, { error: "Bot username must be 3-24 letters, numbers, or underscores." });
+    if (db.users.some((user) => user.username.toLowerCase() === username)) return sendJson(res, 409, { error: "That bot username is already taken." });
+
+    const bot = {
+      id: uid("bot"),
+      fullName,
+      username,
+      age: 1,
+      email: `${username}@bots.closebook.local`,
+      passwordHash: "",
+      bio: bio || "Community bot powered by Iris Core.",
+      website: "",
+      karma: 50,
+      votedUsers: {},
+      karmaVoteTimes: {},
+      following: [],
+      followers: [],
+      savedPosts: [],
+      isModerator: false,
+      moderation: defaultModeration(),
+      registeredIp: "bot-community",
+      lastIp: "bot-community",
+      isBot: true,
+      botOwnerId: currentUser.id,
+      botCommunity: true,
+      botFeatures: defaultBotFeatures(),
+      createdAt: Date.now(),
+    };
+
+    db.users.push(bot);
+    addNotification(db, {
+      userId: currentUser.id,
+      actorId: bot.id,
+      type: "bot-created",
+      text: `${bot.fullName} is ready. Activate Iris Core to use moderation commands in groups.`,
+    });
+    writeDb(db);
+    broadcast("social", { actorId: currentUser.id });
+
+    return sendJson(res, 201, { bot: publicUser(bot) });
+  }
+
+  const botAction = url.pathname.match(/^\/api\/bots\/([^/]+)$/);
+  if (req.method === "PATCH" && botAction) {
+    const body = await readBody(req);
+    const bot = db.users.find((user) => user.id === botAction[1] && user.isBot);
+    if (!bot) return sendJson(res, 404, { error: "Bot not found." });
+    if (bot.botOwnerId !== currentUser.id) return sendJson(res, 403, { error: "Only the bot owner can manage this bot." });
+
+    const fullName = clean(body.fullName).slice(0, 60);
+    const bio = clean(body.bio).slice(0, 140);
+    if (fullName) bot.fullName = fullName;
+    bot.bio = bio;
+    bot.botFeatures = { ...defaultBotFeatures(), ...(bot.botFeatures || {}) };
+    bot.botFeatures.irisCore = Boolean(body.irisCore);
+    bot.botFeatures.autoWelcome = Boolean(body.autoWelcome);
+    bot.botFeatures.antiSpam = Boolean(body.antiSpam);
+    writeDb(db);
+    broadcast("social", { actorId: currentUser.id, targetId: bot.id });
+
+    return sendJson(res, 200, { bot: publicUser(bot) });
+  }
+
+  const botPostAction = url.pathname.match(/^\/api\/bots\/([^/]+)\/posts$/);
+  if (req.method === "POST" && botPostAction) {
+    const body = await readBody(req);
+    const bot = db.users.find((user) => user.id === botPostAction[1] && user.isBot);
+    const text = clean(body.body);
+    const imageData = clean(body.imageData);
+
+    if (!bot) return sendJson(res, 404, { error: "Bot not found." });
+    if (bot.botOwnerId !== currentUser.id) return sendJson(res, 403, { error: "Only the bot owner can post through this bot." });
+    if (!text && !imageData) return sendJson(res, 400, { error: "Write something for the bot to post." });
+    if (text.length > 280) return sendJson(res, 400, { error: "Bot post must be 280 characters or less." });
+    if (imageData && !imageData.startsWith("data:image/")) return sendJson(res, 400, { error: "Image data is invalid." });
+
+    const post = {
+      id: uid("post"),
+      authorId: bot.id,
+      body: text,
+      imageData,
+      likes: [],
+      shares: [],
+      comments: [],
+      createdAt: Date.now(),
+    };
+    db.posts.push(post);
+    notifyMentions(db, {
+      text,
+      actor: bot,
+      type: "post-mention",
+      message: `${bot.username} mentioned you in a bot post.`,
+      postId: post.id,
+    });
+    writeDb(db);
+    broadcast("social", { actorId: bot.id });
+
+    return sendJson(res, 201, { ok: true });
+  }
+
   const postAction = url.pathname.match(/^\/api\/posts\/([^/]+)\/(like|share)$/);
   if (req.method === "POST" && postAction) {
     const post = db.posts.find((item) => item.id === postAction[1]);
@@ -305,7 +413,9 @@ async function handleApi(req, res, url) {
     const post = db.posts[postIndex];
 
     if (!post) return sendJson(res, 404, { error: "Post not found." });
-    if (post.authorId !== currentUser.id) return sendJson(res, 403, { error: "You can only delete your own posts." });
+    const postAuthor = db.users.find((user) => user.id === post.authorId);
+    const canDelete = post.authorId === currentUser.id || (postAuthor?.isBot && postAuthor.botOwnerId === currentUser.id);
+    if (!canDelete) return sendJson(res, 403, { error: "You can only delete your own posts or your bot's posts." });
 
     db.posts.splice(postIndex, 1);
     db.users.forEach((user) => {
@@ -597,10 +707,21 @@ async function handleApi(req, res, url) {
     if (!chat.members.includes(userId)) chat.members.push(userId);
 
     addSystemMessage(chat, `${currentUser.username} added ${user.username}.`);
-    if (userId === IRIS_BOT_ID) {
-      addBotMessage(chat, "Iris Bot joined. Make me an admin to enable moderation commands. Type /help after promotion.");
-    } else if (chat.moderation?.rules) {
-      addBotMessage(chat, `Welcome @${user.username}. Group rules:\n${chat.moderation.rules}`);
+    if (user.isBot) {
+      addBotMessage(
+        chat,
+        `${user.fullName} joined. ${user.botFeatures?.irisCore ? "Make me an admin to enable Iris Core moderation commands. Type /help after promotion." : "Activate Iris Core from Communities if you want moderation commands."}`,
+        user.id,
+      );
+    } else if (chat.moderation?.welcome || chat.moderation?.rules) {
+      const bot = activeModerationBot(db, chat) || db.users.find((item) => item.id === IRIS_BOT_ID);
+      addBotMessage(
+        chat,
+        `Welcome @${user.username}.${chat.moderation.welcome ? `\n${chat.moderation.welcome}` : ""}${
+          chat.moderation.rules ? `\nGroup rules:\n${chat.moderation.rules}` : ""
+        }`,
+        bot?.id || IRIS_BOT_ID,
+      );
     }
     writeDb(db);
     broadcast("chat", { actorId: currentUser.id, chatId: chat.id, members: chat.members });
@@ -695,6 +816,19 @@ async function handleApi(req, res, url) {
       return sendJson(res, 200, { ok: true, commandHandled });
     }
 
+    if (!chat.direct && chat.moderation?.locked && !isChatAdmin(chat, currentUser.id)) {
+      return sendJson(res, 403, { error: "This group is locked by Iris. Only admins can send messages right now." });
+    }
+
+    const slowModeSeconds = Number(chat.moderation?.slowModeSeconds || 0);
+    if (!chat.direct && slowModeSeconds > 0 && !isChatAdmin(chat, currentUser.id)) {
+      const lastAt = Number(chat.moderation?.lastMessageAt?.[currentUser.id] || 0);
+      const remaining = lastAt + slowModeSeconds * 1000 - Date.now();
+      if (remaining > 0) {
+        return sendJson(res, 429, { error: `Slow mode is active. Try again in ${formatDuration(remaining)}.` });
+      }
+    }
+
     const message = {
       id: uid("message"),
       authorId: currentUser.id,
@@ -706,6 +840,12 @@ async function handleApi(req, res, url) {
       createdAt: Date.now(),
     };
     chat.messages.push(message);
+    if (!chat.direct) {
+      chat.moderation.lastMessageAt = {
+        ...(chat.moderation.lastMessageAt || {}),
+        [currentUser.id]: Date.now(),
+      };
+    }
     notifyMentions(db, {
       text,
       actor: currentUser,
@@ -1085,19 +1225,25 @@ function ensureIrisBot(db) {
       registeredIp: "system",
       lastIp: "system",
       isBot: true,
+      botOwnerId: IRIS_OWNER_ID,
+      botCommunity: true,
+      botFeatures: { irisCore: true, autoWelcome: true, antiSpam: true },
       createdAt: Date.now(),
     };
     db.users.push(bot);
-    return;
+  } else {
+    bot.id = IRIS_BOT_ID;
+    bot.fullName = bot.fullName || "Iris Bot";
+    bot.username = IRIS_BOT_USERNAME;
+    bot.email = bot.email || "irisbot@closebook.local";
+    bot.bio = bot.bio || "Default Closebook group moderation bot.";
   }
 
-  bot.id = IRIS_BOT_ID;
-  bot.fullName = "Iris Bot";
-  bot.username = IRIS_BOT_USERNAME;
-  bot.email = bot.email || "irisbot@closebook.local";
-  bot.bio = bot.bio || "Default Closebook group moderation bot.";
   bot.isBot = true;
   bot.isModerator = false;
+  bot.botOwnerId = IRIS_OWNER_ID;
+  bot.botCommunity = true;
+  bot.botFeatures = { ...defaultBotFeatures(), ...(bot.botFeatures || {}), irisCore: true, autoWelcome: true, antiSpam: true };
 }
 
 function readBody(req) {
@@ -1160,6 +1306,9 @@ function publicUser(user) {
     followers: user.followers || [],
     savedPosts: user.savedPosts || [],
     isBot: Boolean(user.isBot),
+    botOwnerId: user.botOwnerId || "",
+    botCommunity: Boolean(user.botCommunity),
+    botFeatures: { ...defaultBotFeatures(), ...(user.botFeatures || {}) },
     isModerator: Boolean(user.isModerator),
     createdAt: user.createdAt,
   };
@@ -1253,10 +1402,10 @@ function addSystemMessage(chat, body) {
   });
 }
 
-function addBotMessage(chat, body) {
+function addBotMessage(chat, body, botId = IRIS_BOT_ID) {
   chat.messages.push({
     id: uid("message"),
-    authorId: IRIS_BOT_ID,
+    authorId: botId,
     body,
     replyTo: "",
     reactions: {},
@@ -1268,14 +1417,40 @@ function addBotMessage(chat, body) {
 function defaultChatModeration() {
   return {
     rules: "",
+    welcome: "",
+    locked: false,
+    slowModeSeconds: 0,
+    lastMessageAt: {},
     bannedUserIds: [],
     mutedUntil: {},
     warnings: {},
   };
 }
 
-function isIrisActive(chat) {
-  return chat.members.includes(IRIS_BOT_ID) && isChatAdmin(chat, IRIS_BOT_ID);
+function defaultBotFeatures() {
+  return {
+    irisCore: false,
+    autoWelcome: false,
+    antiSpam: false,
+  };
+}
+
+function activeModerationBot(db, chat) {
+  return db.users.find(
+    (user) =>
+      user.isBot &&
+      user.botFeatures?.irisCore &&
+      chat.members.includes(user.id) &&
+      isChatAdmin(chat, user.id),
+  );
+}
+
+function visibleBotInChat(db, chat) {
+  return (
+    activeModerationBot(db, chat) ||
+    db.users.find((user) => user.isBot && user.botFeatures?.irisCore && chat.members.includes(user.id)) ||
+    db.users.find((user) => user.id === IRIS_BOT_ID)
+  );
 }
 
 function isGroupMuted(chat, userId) {
@@ -1287,8 +1462,13 @@ function isGroupMuted(chat, userId) {
 }
 
 function handleIrisCommand(db, chat, actor, text) {
-  if (!isIrisActive(chat)) {
-    addBotMessage(chat, "Iris Bot is not active yet. Add Iris Bot to this group and make it admin first.");
+  const bot = activeModerationBot(db, chat);
+  const visibleBot = visibleBotInChat(db, chat);
+  const botId = bot?.id || visibleBot?.id || IRIS_BOT_ID;
+  const botName = bot?.fullName || visibleBot?.fullName || "Iris Bot";
+
+  if (!bot) {
+    addBotMessage(chat, `${botName} is not active yet. Add a bot with Iris Core to this group and make it admin first.`, botId);
     return true;
   }
 
@@ -1301,91 +1481,170 @@ function handleIrisCommand(db, chat, actor, text) {
   if (command === "/help") {
     addBotMessage(
       chat,
-      "Iris commands: /set rules <rules>, /rules, /ban @user, /unban @user, /kick @user, /mute @user <minutes>, /warn @user, /warnings @user, /help.",
+      `${botName} commands: /help, /status, /rules, /set rules <rules>, /welcome <message>, /welcome off, /lock, /unlock, /slowmode <seconds|off>, /ban @user, /unban @user, /kick @user, /mute @user <minutes>, /warn @user, /warnings @user, /clear warnings @user, /clear all warnings, /purge <1-50>.`,
+      bot.id,
+    );
+    return true;
+  }
+
+  if (command === "/status") {
+    addBotMessage(
+      chat,
+      `${botName} status:\nLock: ${chat.moderation.locked ? "on" : "off"}\nSlow mode: ${
+        chat.moderation.slowModeSeconds ? `${chat.moderation.slowModeSeconds}s` : "off"
+      }\nRules: ${chat.moderation.rules ? "set" : "not set"}\nWelcome: ${chat.moderation.welcome ? "set" : "off"}`,
+      bot.id,
     );
     return true;
   }
 
   if (command === "/rules") {
-    addBotMessage(chat, chat.moderation.rules ? `Group rules:\n${chat.moderation.rules}` : "No group rules have been set yet.");
+    addBotMessage(chat, chat.moderation.rules ? `Group rules:\n${chat.moderation.rules}` : "No group rules have been set yet.", bot.id);
     return true;
   }
 
   if (!actorIsAdmin) {
-    addBotMessage(chat, "Only group admins can use moderation commands.");
+    addBotMessage(chat, "Only group admins can use moderation commands.", bot.id);
     return true;
   }
 
   if (command === "/set") {
     const rules = text.replace(/^\/set\s+rules\s*/i, "").trim();
     if (!/^\/set\s+rules\b/i.test(text) || !rules) {
-      addBotMessage(chat, "Use: /set rules <rules>. Rules can be multiple lines.");
+      addBotMessage(chat, "Use: /set rules <rules>. Rules can be multiple lines.", bot.id);
       return true;
     }
     chat.moderation.rules = rules;
-    addBotMessage(chat, `Group rules updated:\n${rules}`);
+    addBotMessage(chat, `Group rules updated:\n${rules}`, bot.id);
+    return true;
+  }
+
+  if (command === "/welcome") {
+    if (!rest || rest.toLowerCase() === "off") {
+      chat.moderation.welcome = "";
+      addBotMessage(chat, "Welcome message disabled.", bot.id);
+      return true;
+    }
+    chat.moderation.welcome = rest.slice(0, 600);
+    addBotMessage(chat, `Welcome message updated:\n${chat.moderation.welcome}`, bot.id);
+    return true;
+  }
+
+  if (command === "/lock") {
+    chat.moderation.locked = true;
+    addBotMessage(chat, "Group locked. Only admins can send messages.", bot.id);
+    return true;
+  }
+
+  if (command === "/unlock") {
+    chat.moderation.locked = false;
+    addBotMessage(chat, "Group unlocked. Members can send messages again.", bot.id);
+    return true;
+  }
+
+  if (command === "/slowmode") {
+    if (!rest || rest.toLowerCase() === "off" || rest === "0") {
+      chat.moderation.slowModeSeconds = 0;
+      addBotMessage(chat, "Slow mode disabled.", bot.id);
+      return true;
+    }
+    const seconds = Math.min(3600, Math.max(5, Number.parseInt(rest, 10) || 0));
+    chat.moderation.slowModeSeconds = seconds;
+    addBotMessage(chat, `Slow mode set to ${seconds} seconds for non-admins.`, bot.id);
+    return true;
+  }
+
+  if (command === "/purge") {
+    const count = Math.min(50, Math.max(1, Number.parseInt(rest, 10) || 0));
+    if (!count) {
+      addBotMessage(chat, "Use: /purge <1-50>.", bot.id);
+      return true;
+    }
+    let removed = 0;
+    for (let index = chat.messages.length - 1; index >= 0 && removed < count; index -= 1) {
+      const message = chat.messages[index];
+      if (message.authorId === bot.id || message.system) continue;
+      chat.messages.splice(index, 1);
+      removed += 1;
+    }
+    addBotMessage(chat, `Purged ${removed} recent member message${removed === 1 ? "" : "s"}.`, bot.id);
+    return true;
+  }
+
+  if (command === "/clear") {
+    if (/^all\s+warnings$/i.test(rest)) {
+      chat.moderation.warnings = {};
+      addBotMessage(chat, "All warnings cleared.", bot.id);
+      return true;
+    }
+    if (/^warnings\b/i.test(rest) && target) {
+      chat.moderation.warnings[target.id] = 0;
+      addBotMessage(chat, `Warnings cleared for @${target.username}.`, bot.id);
+      return true;
+    }
+    addBotMessage(chat, "Use: /clear warnings @user or /clear all warnings.", bot.id);
     return true;
   }
 
   if (!["/ban", "/unban", "/kick", "/mute", "/warn", "/warnings"].includes(command)) {
-    addBotMessage(chat, "Unknown command. Type /help to see Iris commands.");
+    addBotMessage(chat, "Unknown command. Type /help to see bot commands.", bot.id);
     return true;
   }
 
   if (!target) {
-    addBotMessage(chat, "Mention a valid user with @username.");
+    addBotMessage(chat, "Mention a valid user with @username.", bot.id);
     return true;
   }
 
-  if (target.id === IRIS_BOT_ID) {
-    addBotMessage(chat, "I cannot moderate myself.");
+  if (target.id === bot.id) {
+    addBotMessage(chat, "I cannot moderate myself.", bot.id);
     return true;
   }
 
   if (target.id === chat.creatorId && command !== "/warnings") {
-    addBotMessage(chat, "I cannot moderate the group creator.");
+    addBotMessage(chat, "I cannot moderate the group creator.", bot.id);
     return true;
   }
 
   if (isChatAdmin(chat, target.id) && !["/warnings", "/unban"].includes(command)) {
-    addBotMessage(chat, "I cannot moderate another admin. Remove their admin role first.");
+    addBotMessage(chat, "I cannot moderate another admin. Remove their admin role first.", bot.id);
     return true;
   }
 
   if (!chat.members.includes(target.id) && !["/ban", "/unban", "/warnings"].includes(command)) {
-    addBotMessage(chat, `@${target.username} is not currently in this group.`);
+    addBotMessage(chat, `@${target.username} is not currently in this group.`, bot.id);
     return true;
   }
 
   if (command === "/warnings") {
-    addBotMessage(chat, `@${target.username} has ${chat.moderation.warnings[target.id] || 0}/3 warnings.`);
+    addBotMessage(chat, `@${target.username} has ${chat.moderation.warnings[target.id] || 0}/3 warnings.`, bot.id);
     return true;
   }
 
   if (command === "/unban") {
     chat.moderation.bannedUserIds = chat.moderation.bannedUserIds.filter((id) => id !== target.id);
     chat.moderation.warnings[target.id] = 0;
-    addBotMessage(chat, `@${target.username} has been unbanned.`);
+    addBotMessage(chat, `@${target.username} has been unbanned.`, bot.id);
     return true;
   }
 
   if (command === "/ban") {
     if (!chat.moderation.bannedUserIds.includes(target.id)) chat.moderation.bannedUserIds.push(target.id);
     removeChatMember(chat, target.id);
-    addBotMessage(chat, `@${target.username} has been banned and removed from the group.`);
+    addBotMessage(chat, `@${target.username} has been banned and removed from the group.`, bot.id);
     return true;
   }
 
   if (command === "/kick") {
     removeChatMember(chat, target.id);
-    addBotMessage(chat, `@${target.username} has been kicked from the group.`);
+    addBotMessage(chat, `@${target.username} has been kicked from the group.`, bot.id);
     return true;
   }
 
   if (command === "/mute") {
     const minutes = Math.max(1, Math.min(1440, Number(restParts.at(-1)) || 10));
     chat.moderation.mutedUntil[target.id] = Date.now() + minutes * 60_000;
-    addBotMessage(chat, `@${target.username} has been muted for ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+    addBotMessage(chat, `@${target.username} has been muted for ${minutes} minute${minutes === 1 ? "" : "s"}.`, bot.id);
     return true;
   }
 
@@ -1395,9 +1654,9 @@ function handleIrisCommand(db, chat, actor, text) {
     if (warnings >= 3) {
       removeChatMember(chat, target.id);
       chat.moderation.warnings[target.id] = 0;
-      addBotMessage(chat, `@${target.username} reached 3 warnings and was kicked from the group.`);
+      addBotMessage(chat, `@${target.username} reached 3 warnings and was kicked from the group.`, bot.id);
     } else {
-      addBotMessage(chat, `@${target.username} has been warned (${warnings}/3).`);
+      addBotMessage(chat, `@${target.username} has been warned (${warnings}/3).`, bot.id);
     }
     return true;
   }
@@ -1437,6 +1696,9 @@ function normalizeDb(db) {
     user.followers = Array.isArray(user.followers) ? user.followers : [];
     user.savedPosts = Array.isArray(user.savedPosts) ? user.savedPosts : [];
     user.isBot = Boolean(user.isBot);
+    user.botOwnerId = user.botOwnerId || "";
+    user.botCommunity = Boolean(user.botCommunity || user.isBot);
+    user.botFeatures = { ...defaultBotFeatures(), ...(user.botFeatures || {}) };
     user.isModerator = Boolean(user.isModerator);
     user.moderation = { ...defaultModeration(), ...(user.moderation || {}) };
     user.moderation.strikes = Array.isArray(user.moderation.strikes) ? user.moderation.strikes : [];
@@ -1460,6 +1722,10 @@ function normalizeDb(db) {
     chat.moderation.bannedUserIds = Array.isArray(chat.moderation.bannedUserIds) ? chat.moderation.bannedUserIds : [];
     chat.moderation.mutedUntil = chat.moderation.mutedUntil && typeof chat.moderation.mutedUntil === "object" ? chat.moderation.mutedUntil : {};
     chat.moderation.warnings = chat.moderation.warnings && typeof chat.moderation.warnings === "object" ? chat.moderation.warnings : {};
+    chat.moderation.lastMessageAt = chat.moderation.lastMessageAt && typeof chat.moderation.lastMessageAt === "object" ? chat.moderation.lastMessageAt : {};
+    chat.moderation.locked = Boolean(chat.moderation.locked);
+    chat.moderation.slowModeSeconds = Math.max(0, Number(chat.moderation.slowModeSeconds || 0));
+    chat.moderation.welcome = chat.moderation.welcome || "";
     chat.messages = Array.isArray(chat.messages) ? chat.messages : [];
     chat.messages.forEach((message) => {
       message.replyTo = message.replyTo || "";
